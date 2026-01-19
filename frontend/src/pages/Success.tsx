@@ -78,7 +78,6 @@ export const Success: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                window.location.hash = '#/dashboard';
                 navigate('/dashboard', { replace: true });
               }}
               className="w-full bg-gray-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-black transition-all flex items-center justify-center gap-3"
