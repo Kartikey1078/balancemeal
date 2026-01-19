@@ -16,7 +16,9 @@ dotenv.config();
    APP SETUP
 ====================== */
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+const upload = process.env.VERCEL
+  ? multer({ storage: multer.memoryStorage() })
+  : multer({ dest: 'uploads/' });
 
 app.use(express.json());
 const frontendOrigin = process.env.FRONTEND_ORIGIN || 'http://localhost:3005';
