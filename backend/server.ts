@@ -92,6 +92,11 @@ const OrderSchema = new mongoose.Schema(
     email: String,
     items: Array,
     totalPrice: Number,
+    subtotal: Number,
+    discountAmount: { type: Number, default: 0 },
+    couponCode: String,
+    couponType: String,
+    couponValue: Number,
     status: { type: String, default: 'PLACED' },
     deliveryDetails: Object,
     deliverySchedule: {
@@ -109,6 +114,8 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true },
     passwordHash: { type: String, required: true },
     role: { type: String, enum: ['USER', 'ADMIN'], default: 'USER' },
+    resetTokenHash: String,
+    resetTokenExpires: Date,
   },
   { timestamps: true }
 );
@@ -155,10 +162,110 @@ const RecipeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const CouponSchema = new mongoose.Schema(
+  {
+    code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    type: { type: String, enum: ['percent', 'amount'], required: true },
+    value: { type: Number, required: true },
+    active: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
 const Meal = mongoose.model('Meal', MealSchema);
 const Order = mongoose.model('Order', OrderSchema);
 const Recipe = mongoose.model('Recipe', RecipeSchema);
 const User = mongoose.model('User', UserSchema);
+const Coupon = mongoose.model('Coupon', CouponSchema);
+
+const PLANS = [
+  { id: 'plan_5', price: 66, mealLimit: 5, extraPrice: 12.9 },
+  { id: 'plan_10', price: 121, mealLimit: 10, extraPrice: 11.9 },
+];
+
+const normalizeCouponCode = (code: any) =>
+  String(code || '').trim().toUpperCase();
+
+const calculateWeeklyTotal = (items: any[], planId?: string) => {
+  const totalMeals = (items || []).reduce((sum, item) => {
+    const qty = Number(item?.quantity || 0);
+    return sum + (Number.isFinite(qty) ? qty : 0);
+  }, 0);
+  if (!totalMeals) {
+    return { totalMeals: 0, subtotal: 0, planUsed: PLANS[0], extraCharges: 0 };
+  }
+  const selectedPlan = PLANS.find((plan) => plan.id === planId);
+  const planUsed = selectedPlan || (totalMeals >= 10 ? PLANS[1] : PLANS[0]);
+  const extraCount = Math.max(0, totalMeals - planUsed.mealLimit);
+  const extraCharges = extraCount * planUsed.extraPrice;
+  const subtotal = planUsed.price + extraCharges;
+  return { totalMeals, subtotal, planUsed, extraCharges };
+};
+
+const applyCouponToTotal = (subtotal: number, coupon: any) => {
+  if (!coupon) {
+    return { discountAmount: 0, totalAfterDiscount: subtotal };
+  }
+  const rawDiscount =
+    coupon.type === 'percent'
+      ? subtotal * (coupon.value / 100)
+      : coupon.value;
+  const discountAmount = Math.max(0, Math.min(subtotal, rawDiscount));
+  const totalAfterDiscount = Math.max(0, subtotal - discountAmount);
+  return { discountAmount, totalAfterDiscount };
+};
+
+const buildResetLink = (token: string, email: string) => {
+  const base = frontendOrigin || 'http://localhost:3005';
+  const encodedEmail = encodeURIComponent(email);
+  return `${base}/#/reset-password?token=${token}&email=${encodedEmail}`;
+};
+
+const sendRecoveryEmail = async (to: string, link: string) => {
+  const subject = 'Reset your VitalEats password';
+  const text = `Reset your password using this link: ${link}`;
+  const html = `
+    <p>You requested a password reset.</p>
+    <p><a href="${link}">Click here to reset your password</a></p>
+    <p>If you did not request this, you can ignore this email.</p>
+  `;
+
+  if (process.env.EMAIL_WEBHOOK_URL) {
+    await fetch(process.env.EMAIL_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, text, html }),
+    });
+    return;
+  }
+
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: String(process.env.SMTP_SECURE || 'false') === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to,
+        subject,
+        text,
+        html,
+      });
+      return;
+    } catch (err) {
+      console.warn('SMTP email failed, falling back to log', err);
+    }
+  }
+
+  console.info('Password reset link:', link);
+};
 
 /* ======================
    AUTH MIDDLEWARE
@@ -327,6 +434,50 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
+// Auth: Forgot Password
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const email = String(req.body?.email || '').toLowerCase();
+  if (!email) {
+    return res.status(200).json({ ok: true });
+  }
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(200).json({ ok: true });
+  }
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  user.resetTokenHash = tokenHash;
+  user.resetTokenExpires = new Date(Date.now() + 1000 * 60 * 60);
+  await user.save();
+  const link = buildResetLink(token, email);
+  await sendRecoveryEmail(email, link);
+  return res.status(200).json({ ok: true });
+});
+
+// Auth: Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  const email = String(req.body?.email || '').toLowerCase();
+  const token = String(req.body?.token || '');
+  const newPassword = String(req.body?.password || '');
+  if (!email || !token || !newPassword || newPassword.length < 8) {
+    return res.status(400).json({ ok: false, error: 'Invalid reset request' });
+  }
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const user = await User.findOne({
+    email,
+    resetTokenHash: tokenHash,
+    resetTokenExpires: { $gt: new Date() },
+  });
+  if (!user) {
+    return res.status(400).json({ ok: false, error: 'Invalid or expired token' });
+  }
+  user.passwordHash = await bcrypt.hash(newPassword, 10);
+  user.resetTokenHash = undefined;
+  user.resetTokenExpires = undefined;
+  await user.save();
+  return res.status(200).json({ ok: true });
+});
+
 // Auth: Admin Login
 app.post('/api/admin/login', async (req, res) => {
   const { email, password } = req.body;
@@ -347,6 +498,35 @@ app.post('/api/admin/login', async (req, res) => {
     token,
     user: { id: admin._id, name: admin.name, email: admin.email, role: admin.role },
   });
+});
+
+// Auth: Current User (verify token + role)
+app.get('/api/auth/me', userAuth, async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    const user = await User.findById(userId).select('name email role');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch {
+    return res.status(500).json({ error: 'Failed to verify user' });
+  }
+});
+
+// Auth: Verify Admin Token
+app.get('/api/admin/verify', adminOnly, async (_req, res) => {
+  return res.json({ ok: true });
 });
 
 // Public: Get Meals
@@ -384,6 +564,32 @@ app.get('/api/recipes/:id', async (req, res) => {
   } catch {
     res.status(500).json({ error: 'Failed to fetch recipe' });
   }
+});
+
+// Public: Validate Coupon
+app.post('/api/coupons/validate', async (req, res) => {
+  const { code, items, planId } = req.body;
+  const normalized = normalizeCouponCode(code);
+  if (!normalized) {
+    return res.status(400).json({ valid: false, error: 'Enter a coupon code' });
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ valid: false, error: 'Cart is empty' });
+  }
+  const coupon = await Coupon.findOne({ code: normalized, active: true });
+  if (!coupon) {
+    return res.status(404).json({ valid: false, error: 'Invalid coupon' });
+  }
+  const { subtotal } = calculateWeeklyTotal(items, planId);
+  const { discountAmount, totalAfterDiscount } = applyCouponToTotal(subtotal, coupon);
+  return res.json({
+    valid: true,
+    code: coupon.code,
+    type: coupon.type,
+    value: coupon.value,
+    discountAmount,
+    totalAfterDiscount,
+  });
 });
 
 // Admin: Upload Image
@@ -500,13 +706,15 @@ app.get('/api/admin/users', adminOnly, async (req, res) => {
   const latestOrderByEmail = new Map<string, any>();
   const allOrdersByEmail = new Map<string, any[]>();
   for (const order of orders) {
-    if (!latestOrderByEmail.has(order.email)) {
-      latestOrderByEmail.set(order.email, order);
+    const orderEmail = order.email || order.deliveryDetails?.email;
+    if (!orderEmail) continue;
+    if (!latestOrderByEmail.has(orderEmail)) {
+      latestOrderByEmail.set(orderEmail, order);
     }
-    if (!allOrdersByEmail.has(order.email)) {
-      allOrdersByEmail.set(order.email, []);
+    if (!allOrdersByEmail.has(orderEmail)) {
+      allOrdersByEmail.set(orderEmail, []);
     }
-    allOrdersByEmail.get(order.email)!.push(order);
+    allOrdersByEmail.get(orderEmail)!.push(order);
   }
 
   const enrichedUsers = users.map((user: any) => {
@@ -540,7 +748,7 @@ app.get('/api/admin/users', adminOnly, async (req, res) => {
    PAYMENTS (SQUARE)
 ====================== */
 app.post('/api/payments/process', async (req, res) => {
-  const { sourceId, amount, deliveryDetails, items, customerEmail, deliverySchedule } = req.body;
+  const { sourceId, amount, deliveryDetails, items, customerEmail, deliverySchedule, couponCode, planId } = req.body;
   const locationId = process.env.SQUARE_LOCATION_ID;
   const currency = process.env.SQUARE_CURRENCY || 'CAD';
 
@@ -551,6 +759,9 @@ app.post('/api/payments/process', async (req, res) => {
     if (typeof amount !== 'number' || Number.isNaN(amount)) {
       return res.status(400).json({ success: false, error: 'Invalid amount' });
     }
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Missing items' });
+    }
     if (!deliveryDetails?.fullName || !deliveryDetails?.email) {
       return res.status(400).json({
         success: false,
@@ -558,13 +769,26 @@ app.post('/api/payments/process', async (req, res) => {
       });
     }
     const orderEmail = customerEmail || deliveryDetails.email;
+    const normalizedCoupon = normalizeCouponCode(couponCode);
+    const coupon = normalizedCoupon
+      ? await Coupon.findOne({ code: normalizedCoupon, active: true })
+      : null;
+    const { subtotal } = calculateWeeklyTotal(items, planId);
+    const { discountAmount, totalAfterDiscount } = applyCouponToTotal(subtotal, coupon);
+    const computedAmount = Number(totalAfterDiscount.toFixed(2));
+    if (Math.abs(computedAmount - amount) > 0.01) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid weekly commitment amount',
+      });
+    }
 
     const payment = await squareClient.paymentsApi.createPayment({
       sourceId,
       idempotencyKey: crypto.randomUUID(),
       ...(locationId ? { locationId } : {}),
       amountMoney: {
-        amount: BigInt(Math.round(amount * 100)),
+        amount: BigInt(Math.round(computedAmount * 100)),
         currency,
       },
     });
@@ -573,7 +797,12 @@ app.post('/api/payments/process', async (req, res) => {
       customerName: deliveryDetails.fullName,
       email: orderEmail,
       items,
-      totalPrice: amount,
+      totalPrice: computedAmount,
+      subtotal,
+      discountAmount,
+      couponCode: coupon?.code,
+      couponType: coupon?.type,
+      couponValue: coupon?.value,
       status: 'PLACED',
       deliveryDetails,
       deliverySchedule,
@@ -600,10 +829,72 @@ app.post('/api/payments/process', async (req, res) => {
 /* ======================
    ADMIN DASHBOARD
 ====================== */
+app.get('/api/admin/coupons', adminOnly, async (_req, res) => {
+  const coupons = await Coupon.find().sort('-createdAt');
+  res.json({ coupons });
+});
+
+app.post('/api/admin/coupons', adminOnly, async (req, res) => {
+  const { code, type, value, active = true } = req.body;
+  const normalized = normalizeCouponCode(code);
+  if (!normalized) {
+    return res.status(400).json({ error: 'Coupon code required' });
+  }
+  if (!['percent', 'amount'].includes(type)) {
+    return res.status(400).json({ error: 'Invalid coupon type' });
+  }
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return res.status(400).json({ error: 'Invalid coupon value' });
+  }
+  if (type === 'percent' && numericValue > 100) {
+    return res.status(400).json({ error: 'Percent cannot exceed 100' });
+  }
+  const existing = await Coupon.findOne({ code: normalized });
+  if (existing) {
+    return res.status(409).json({ error: 'Coupon code already exists' });
+  }
+  const coupon = new Coupon({
+    code: normalized,
+    type,
+    value: numericValue,
+    active: Boolean(active),
+  });
+  await coupon.save();
+  return res.status(201).json(coupon);
+});
+
+app.patch('/api/admin/coupons/:id', adminOnly, async (req, res) => {
+  const { active, type, value } = req.body;
+  const updates: any = {};
+  if (typeof active === 'boolean') updates.active = active;
+  if (type) {
+    if (!['percent', 'amount'].includes(type)) {
+      return res.status(400).json({ error: 'Invalid coupon type' });
+    }
+    updates.type = type;
+  }
+  if (value !== undefined) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      return res.status(400).json({ error: 'Invalid coupon value' });
+    }
+    if (updates.type === 'percent' && numericValue > 100) {
+      return res.status(400).json({ error: 'Percent cannot exceed 100' });
+    }
+    updates.value = numericValue;
+  }
+  const updated = await Coupon.findByIdAndUpdate(req.params.id, updates, { new: true });
+  if (!updated) {
+    return res.status(404).json({ error: 'Coupon not found' });
+  }
+  return res.json(updated);
+});
+
 app.get('/api/admin/stats', adminOnly, async (_, res) => {
   const orders = await Order.find().sort('-createdAt');
   const revenue = orders.reduce(
-    (sum, order) => sum + order.totalPrice,
+    (sum, order) => sum + (order.totalPrice ?? 0),
     0
   );
 
@@ -649,11 +940,15 @@ mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/vitaleats')
   .then(() => {
     ensureAdminUser().finally(() => {
-      app.listen(PORT, () =>
-        console.log(`🚀 Backend running on http://localhost:${PORT}`)
-      );
+      if (!process.env.VERCEL) {
+        app.listen(PORT, () =>
+          console.log(`🚀 Backend running on http://localhost:${PORT}`)
+        );
+      }
     });
   })
   .catch((err) => {
     console.error('MongoDB connection failed', err);
   });
+
+export default app;

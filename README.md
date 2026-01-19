@@ -2,19 +2,33 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# VitalEats (Frontend + Backend)
 
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/temp/2
+This repo is split into two independent apps:
+- `frontend/` (React + Vite)
+- `backend/` (Node.js + Express)
 
 ## Run Locally
 
 **Prerequisites:**  Node.js
 
+### Backend
+1. `cd backend`
+2. `npm install`
+3. Create `.env` with your backend secrets (Mongo, Square, Cloudinary, email, etc.)
+4. Run: `npm run dev`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Frontend
+1. `cd frontend`
+2. `npm install`
+3. Create `.env` with:
+   - `VITE_API_BASE_URL=http://localhost:3000/api`
+   - `VITE_SQUARE_APP_ID=...`
+   - `VITE_SQUARE_LOCATION_ID=...`
+   - `VITE_WHATSAPP_NUMBER=...`
+4. Run: `npm run dev`
+
+## Vercel Deployment
+- **Frontend**: import the repo in Vercel and set the project root to `frontend/`.
+- **Backend**: create a second Vercel project with root set to `backend/`.
+- Set backend env vars in the backend project, and set `VITE_API_BASE_URL` to the backend URL in the frontend project.
