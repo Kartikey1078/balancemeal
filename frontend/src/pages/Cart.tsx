@@ -50,8 +50,8 @@ export const Cart: React.FC = () => {
             {cart.map((item) => {
               const mealKey = item.meal._id || item.meal.id || item.meal.name;
               return (
-              <div key={`${mealKey}-${item.baseOption || 'default'}`} className="bg-white p-6 rounded-2xl border border-gray-100 flex items-center gap-6 shadow-sm hover:shadow-md transition-shadow">
-                <img src={item.meal.image} className="w-24 h-24 rounded-xl object-cover" alt={item.meal.name} />
+              <div key={`${mealKey}-${item.baseOption || 'default'}`} className="bg-white p-6 rounded-2xl border border-gray-100 flex flex-col sm:flex-row sm:items-center gap-6 shadow-sm hover:shadow-md transition-shadow">
+                <img src={item.meal.image} className="w-full sm:w-24 h-40 sm:h-24 rounded-xl object-cover" alt={item.meal.name} />
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">{item.meal.name}</h3>
                   <p className="text-sm text-gray-400">{item.meal.calories} calories • {item.meal.isVeg ? 'Vegetarian' : 'Non-Veg'}</p>
@@ -80,8 +80,8 @@ export const Cart: React.FC = () => {
                   </div>
                   {item.meal.allowSplit !== false && (
                     <>
-                      <div className="mt-5 grid grid-cols-2 gap-4">
-                        <div className="flex items-center justify-between gap-3">
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-2">
                           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                             Sunday
                           </span>
@@ -100,10 +100,10 @@ export const Cart: React.FC = () => {
                                 item.baseOption
                               )
                             }
-                            className="w-20 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none"
+                            className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none"
                           />
                         </div>
-                        <div className="flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-2">
                           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                             Wednesday
                           </span>
@@ -122,7 +122,7 @@ export const Cart: React.FC = () => {
                                 item.baseOption
                               )
                             }
-                            className="w-20 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none"
+                            className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 focus:outline-none"
                           />
                         </div>
                       </div>
