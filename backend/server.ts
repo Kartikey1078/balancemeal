@@ -629,6 +629,33 @@ app.post('/api/admin/meals', adminOnly, async (req, res) => {
   res.status(201).json(meal);
 });
 
+// Admin: Bulk create meals
+app.post('/api/admin/meals/bulk', adminOnly, async (req, res) => {
+  const payload = Array.isArray(req.body) ? req.body : req.body?.meals;
+  if (!Array.isArray(payload) || payload.length === 0) {
+    return res.status(400).json({ error: 'meals array is required' });
+  }
+
+  const created: any[] = [];
+  const errors: Array<{ index: number; error: string }> = [];
+
+  for (let i = 0; i < payload.length; i += 1) {
+    const item = payload[i];
+    try {
+      const meal = new Meal(item);
+      await meal.save();
+      created.push(meal);
+    } catch (err: any) {
+      errors.push({ index: i, error: err?.message || 'Failed to create meal' });
+    }
+  }
+
+  if (created.length === 0) {
+    return res.status(400).json({ error: 'No meals created', errors });
+  }
+  res.status(201).json({ createdCount: created.length, errors, meals: created });
+});
+
 // Admin: Update Meal
 app.patch('/api/admin/meals/:id', adminOnly, async (req, res) => {
   const meal = await Meal.findByIdAndUpdate(req.params.id, req.body, {
