@@ -357,7 +357,7 @@ export const Checkout: React.FC = () => {
                   </div>
                   <Lock className="w-4 h-4 text-gray-500" />
                 </div>
-                <div className="p-10 space-y-8">
+                <div className="">
                   <div className="p-8 border-2 border-dashed border-gray-100 rounded-3xl overflow-hidden">
                     <div id="card-container" className="w-full max-w-full" />
                   </div>
