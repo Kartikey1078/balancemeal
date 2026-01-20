@@ -67,7 +67,7 @@ export const AdminDashboard: React.FC = () => {
     "Dairy Free",
   ];
 
-  const { adminData, adminLogout } = useApp();
+  const { adminData, adminLogout, adminMealsLoading, adminRecipesLoading } = useApp();
   const ORDER_STATUS_FLOW: OrderStatus[] = [
     OrderStatus.PLACED,
     OrderStatus.RECEIVED,
@@ -81,7 +81,13 @@ export const AdminDashboard: React.FC = () => {
   const [showAddMeal, setShowAddMeal] = useState(false);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedWeek, setSelectedWeek] = useState<"all" | number>("all");
+  const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [mealsPage, setMealsPage] = useState(1);
+  const [mealsPageSize, setMealsPageSize] = useState(9);
+  const [mealsTotalPages, setMealsTotalPages] = useState(1);
+  const [recipesPage, setRecipesPage] = useState(1);
+  const [recipesPageSize, setRecipesPageSize] = useState(9);
+  const [recipesTotalPages, setRecipesTotalPages] = useState(1);
   const [orderStatusFilter, setOrderStatusFilter] = useState<"all" | OrderStatus>("all");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [recipeImageFile, setRecipeImageFile] = useState<File | null>(null);
@@ -116,6 +122,32 @@ export const AdminDashboard: React.FC = () => {
   useEffect(() => {
     adminData.refreshData();
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== "meals") return;
+    const load = async () => {
+      const data = await adminData.fetchMealsByWeek(
+        selectedWeek,
+        mealsPage,
+        mealsPageSize
+      );
+      setMealsTotalPages(data.totalPages || 1);
+    };
+    load();
+  }, [activeTab, selectedWeek, mealsPage, mealsPageSize]);
+
+  useEffect(() => {
+    if (activeTab !== "recipes") return;
+    const load = async () => {
+      const data = await adminData.fetchRecipes(
+        recipesPage,
+        recipesPageSize,
+        searchQuery
+      );
+      setRecipesTotalPages(data.totalPages || 1);
+    };
+    load();
+  }, [activeTab, recipesPage, recipesPageSize, searchQuery]);
 
   useEffect(() => {
     if (activeTab !== "users") return;
@@ -167,11 +199,9 @@ export const AdminDashboard: React.FC = () => {
     const query = searchQuery.toLowerCase();
     return adminData.meals.filter((m) => {
       const matchesTitle = (m.name || "").toLowerCase().includes(query);
-      const matchesWeek =
-        selectedWeek === "all" ? true : (m.week ?? 1) === selectedWeek;
-      return matchesTitle && matchesWeek;
+      return matchesTitle;
     });
-  }, [adminData.meals, searchQuery, selectedWeek]);
+  }, [adminData.meals, searchQuery]);
 
   const filteredOrders = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -187,11 +217,8 @@ export const AdminDashboard: React.FC = () => {
   }, [adminData.allOrders, searchQuery, orderStatusFilter]);
 
   const filteredRecipes = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return adminData.recipes.filter((r) =>
-      (r.title || "").toLowerCase().includes(query)
-    );
-  }, [adminData.recipes, searchQuery]);
+    return adminData.recipes;
+  }, [adminData.recipes]);
 
   const dashboardStats = useMemo(() => {
     const orders = adminData.allOrders || [];
@@ -611,16 +638,32 @@ export const AdminDashboard: React.FC = () => {
             <select
               value={selectedWeek}
               onChange={(e) =>
-                setSelectedWeek(
-                  e.target.value === "all" ? "all" : Number(e.target.value)
-                )
+                setSelectedWeek(Number(e.target.value))
               }
               className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
             >
-              <option value="all">All Weeks</option>
               {[1, 2, 3, 4, 5, 6].map((week) => (
                 <option key={week} value={week}>
                   Week {week}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+              Page Size
+            </label>
+            <select
+              value={mealsPageSize}
+              onChange={(e) => {
+                setMealsPageSize(Number(e.target.value));
+                setMealsPage(1);
+              }}
+              className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+            >
+              {[6, 9, 12].map((size) => (
+                <option key={size} value={size}>
+                  {size}
                 </option>
               ))}
             </select>
@@ -638,67 +681,105 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {filteredMeals.map((meal) => (
-          <div
-            key={meal._id}
-            className="bg-[#1C1C1C] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col group w-full max-w-[420px] mx-auto md:max-w-none"
-          >
-            <div className="relative h-56 sm:h-64 lg:h-72 overflow-hidden">
-              <img
-                src={meal.image}
-                className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all duration-[1.5s]"
-              />
-              <div className="absolute top-6 right-6 flex gap-2">
-                <button
-                  onClick={() => handleEditMeal(meal)}
-                  className="p-3 bg-white/10 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => adminData.deleteMeal(meal._id!)}
-                  className="p-3 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="absolute bottom-6 right-6 bg-black/60 backdrop-blur px-3 py-2 rounded-xl text-[10px] font-black text-white flex items-center gap-2 shadow-xl">
-                <Flame className="w-4 h-4 text-gold-500" /> {meal.calories}
+      {adminMealsLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {Array.from({ length: mealsPageSize }).map((_, idx) => (
+            <div
+              key={`meal-skeleton-${idx}`}
+              className="bg-[#1C1C1C] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-sm animate-pulse"
+            >
+              <div className="h-56 sm:h-64 lg:h-72 bg-white/10"></div>
+              <div className="p-6 sm:p-8 lg:p-10 space-y-4">
+                <div className="h-6 bg-white/10 rounded w-3/4"></div>
+                <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                <div className="h-3 bg-white/10 rounded w-1/3"></div>
               </div>
             </div>
-            <div className="p-6 sm:p-8 lg:p-10 flex-1 flex flex-col">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight break-words">
-                  {meal.name}
-                </h3>
-              </div>
-              {/* <p className="text-gray-500 text-sm italic mb-8">
-                "{meal.description}"
-              </p> */}
-              <div className="pt-6 border-t border-white/5 flex items-center justify-between mt-auto">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-3 h-3 rounded-full ${
-                      meal.available
-                        ? "bg-emerald-500 shadow-[0_0_10px_#10B981]"
-                        : "bg-rose-500"
-                    }`}
-                  ></div>
-                  <span className="text-[10px] font-black uppercase text-gray-500">
-                    {meal.available ? "Online" : "Offline"}
-                  </span>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {filteredMeals.map((meal) => (
+            <div
+              key={meal._id}
+              className="bg-[#1C1C1C] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col group w-full max-w-[420px] mx-auto md:max-w-none"
+            >
+              <div className="relative h-56 sm:h-64 lg:h-72 overflow-hidden">
+                <img
+                  src={meal.image}
+                  className="w-full h-full object-cover opacity-60 group-hover:scale-110 group-hover:opacity-100 transition-all duration-[1.5s]"
+                />
+                <div className="absolute top-6 right-6 flex gap-2">
+                  <button
+                    onClick={() => handleEditMeal(meal)}
+                    className="p-3 bg-white/10 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => adminData.deleteMeal(meal._id!)}
+                    className="p-3 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => adminData.toggleMealAvailability(meal._id!)}
-                  className="text-[10px] font-black uppercase text-gold-500 hover:text-white"
-                >
-                  {meal.available ? "Set Offline" : "Set Online"}
-                </button>
+                <div className="absolute bottom-6 right-6 bg-black/60 backdrop-blur px-3 py-2 rounded-xl text-[10px] font-black text-white flex items-center gap-2 shadow-xl">
+                  <Flame className="w-4 h-4 text-gold-500" /> {meal.calories}
+                </div>
+              </div>
+              <div className="p-6 sm:p-8 lg:p-10 flex-1 flex flex-col">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight break-words">
+                    {meal.name}
+                  </h3>
+                </div>
+                {/* <p className="text-gray-500 text-sm italic mb-8">
+                  "{meal.description}"
+                </p> */}
+                <div className="pt-6 border-t border-white/5 flex items-center justify-between mt-auto">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        meal.available
+                          ? "bg-emerald-500 shadow-[0_0_10px_#10B981]"
+                          : "bg-rose-500"
+                      }`}
+                    ></div>
+                    <span className="text-[10px] font-black uppercase text-gray-500">
+                      {meal.available ? "Online" : "Offline"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => adminData.toggleMealAvailability(meal._id!)}
+                    className="text-[10px] font-black uppercase text-gold-500 hover:text-white"
+                  >
+                    {meal.available ? "Set Offline" : "Set Online"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      )}
+
+      <div className="mt-10 flex items-center justify-between">
+        <button
+          onClick={() => setMealsPage((p) => Math.max(1, p - 1))}
+          disabled={mealsPage === 1}
+          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-300 disabled:opacity-40"
+        >
+          Prev
+        </button>
+        <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+          Page {mealsPage} of {mealsTotalPages}
+        </span>
+        <button
+          onClick={() => setMealsPage((p) => Math.min(mealsTotalPages, p + 1))}
+          disabled={mealsPage >= mealsTotalPages}
+          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-300 disabled:opacity-40"
+        >
+          Next
+        </button>
       </div>
 
       {showAddMeal && (
@@ -968,73 +1049,132 @@ export const AdminDashboard: React.FC = () => {
         <h3 className="text-gray-500 text-xs font-black uppercase tracking-widest">
           {filteredRecipes.length} Recipes
         </h3>
-        <button
-          onClick={() => {
-            setEditingRecipe(null);
-            resetRecipeForm();
-            setShowAddRecipe(true);
-          }}
-          className="px-8 py-4 gold-gradient text-white rounded-2xl font-black text-sm flex items-center gap-3 shadow-xl"
-        >
-          <Plus className="w-5 h-5" /> New Recipe
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+              Page Size
+            </label>
+            <select
+              value={recipesPageSize}
+              onChange={(e) => {
+                setRecipesPageSize(Number(e.target.value));
+                setRecipesPage(1);
+              }}
+              className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+            >
+              {[6, 9, 12].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => {
+              setEditingRecipe(null);
+              resetRecipeForm();
+              setShowAddRecipe(true);
+            }}
+            className="px-8 py-4 gold-gradient text-white rounded-2xl font-black text-sm flex items-center gap-3 shadow-xl"
+          >
+            <Plus className="w-5 h-5" /> New Recipe
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {filteredRecipes.map((recipe) => (
-          <div
-            key={recipe._id}
-            className="bg-[#1C1C1C] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col group"
-          >
-            <div className="relative h-56 overflow-hidden">
-              <img
-                src={recipe.image}
-                className="w-full h-full object-cover opacity-70 group-hover:scale-110 transition-transform duration-[1.5s]"
-              />
-              <div className="absolute top-6 right-6 flex gap-2">
-                <button
-                  onClick={() => handleEditRecipe(recipe)}
-                  className="p-3 bg-white/10 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => adminData.deleteRecipe(recipe._id!)}
-                  className="p-3 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+      {adminRecipesLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {Array.from({ length: recipesPageSize }).map((_, idx) => (
+            <div
+              key={`recipe-skeleton-${idx}`}
+              className="bg-[#1C1C1C] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-sm animate-pulse"
+            >
+              <div className="h-56 bg-white/10"></div>
+              <div className="p-8 space-y-4">
+                <div className="h-6 bg-white/10 rounded w-3/4"></div>
+                <div className="h-4 bg-white/10 rounded w-1/2"></div>
+                <div className="h-4 bg-white/10 rounded w-1/3"></div>
               </div>
             </div>
-            <div className="p-8">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-black text-white">{recipe.title}</h3>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {recipe.category} • {recipe.difficulty}
-                  </div>
-                </div>
-                <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${
-                  recipe.status === "Published"
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                    : "bg-white/5 text-gray-400 border-white/10"
-                }`}>
-                  {recipe.status}
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(recipe.tags || []).map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wide border bg-white/5 text-gray-300 border-white/10"
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {filteredRecipes.map((recipe) => (
+            <div
+              key={recipe._id}
+              className="bg-[#1C1C1C] rounded-[2.5rem] overflow-hidden border border-white/5 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col group"
+            >
+              <div className="relative h-56 overflow-hidden">
+                <img
+                  src={recipe.image}
+                  className="w-full h-full object-cover opacity-70 group-hover:scale-110 transition-transform duration-[1.5s]"
+                />
+                <div className="absolute top-6 right-6 flex gap-2">
+                  <button
+                    onClick={() => handleEditRecipe(recipe)}
+                    className="p-3 bg-white/10 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
                   >
-                    {tag}
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => adminData.deleteRecipe(recipe._id!)}
+                    className="p-3 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-110 transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="p-8">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-black text-white">{recipe.title}</h3>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {recipe.category} • {recipe.difficulty}
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-full border ${
+                    recipe.status === "Published"
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      : "bg-white/5 text-gray-400 border-white/10"
+                  }`}>
+                    {recipe.status}
                   </span>
-                ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(recipe.tags || []).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wide border bg-white/5 text-gray-300 border-white/10"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      )}
+
+      <div className="mt-10 flex items-center justify-between">
+        <button
+          onClick={() => setRecipesPage((p) => Math.max(1, p - 1))}
+          disabled={recipesPage === 1}
+          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-300 disabled:opacity-40"
+        >
+          Prev
+        </button>
+        <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+          Page {recipesPage} of {recipesTotalPages}
+        </span>
+        <button
+          onClick={() => setRecipesPage((p) => Math.min(recipesTotalPages, p + 1))}
+          disabled={recipesPage >= recipesTotalPages}
+          className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-300 disabled:opacity-40"
+        >
+          Next
+        </button>
       </div>
 
       {showAddRecipe && (

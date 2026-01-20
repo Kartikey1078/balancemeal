@@ -535,10 +535,15 @@ app.get('/api/admin/verify', adminOnly, async (_req, res) => {
   return res.json({ ok: true });
 });
 
-// Public: Get Meals
-app.get('/api/meals', async (_, res) => {
+// Public: Get Meals (optionally by week)
+app.get('/api/meals', async (req, res) => {
   try {
-    const meals = await Meal.find({ available: true });
+    const weekParam = Number(req.query.week);
+    const filters: any = { available: true };
+    if (Number.isFinite(weekParam) && weekParam > 0) {
+      filters.week = weekParam;
+    }
+    const meals = await Meal.find(filters);
     res.json(meals);
   } catch {
     res.status(500).json({ error: 'Failed to fetch meals' });
@@ -622,6 +627,32 @@ app.post(
   }
 );
 
+// Admin: Get Meals (paginated by week)
+app.get('/api/admin/meals', adminOnly, async (req, res) => {
+  const page = Math.max(1, Number(req.query.page || 1));
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || 12)));
+  const weekParam = Number(req.query.week);
+
+  const filters: any = {};
+  if (Number.isFinite(weekParam) && weekParam > 0) {
+    filters.week = weekParam;
+  }
+
+  const total = await Meal.countDocuments(filters);
+  const meals = await Meal.find(filters)
+    .sort('-createdAt')
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  res.json({
+    meals,
+    page,
+    limit,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  });
+});
+
 // Admin: Create Meal
 app.post('/api/admin/meals', adminOnly, async (req, res) => {
   const meal = new Meal(req.body);
@@ -670,10 +701,30 @@ app.delete('/api/admin/meals/:id', adminOnly, async (req, res) => {
   res.status(204).send();
 });
 
-// Admin: Recipes
-app.get('/api/admin/recipes', adminOnly, async (_, res) => {
-  const recipes = await Recipe.find({ isDeleted: false }).sort('-createdAt');
-  res.json(recipes);
+// Admin: Recipes (paginated)
+app.get('/api/admin/recipes', adminOnly, async (req, res) => {
+  const page = Math.max(1, Number(req.query.page || 1));
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit || 12)));
+  const search = String(req.query.search || '').trim().toLowerCase();
+
+  const filters: any = { isDeleted: false };
+  if (search) {
+    filters.title = { $regex: search, $options: 'i' };
+  }
+
+  const total = await Recipe.countDocuments(filters);
+  const recipes = await Recipe.find(filters)
+    .sort('-createdAt')
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  res.json({
+    recipes,
+    page,
+    limit,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  });
 });
 
 app.post('/api/admin/recipes', adminOnly, async (req, res) => {

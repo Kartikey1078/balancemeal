@@ -16,6 +16,8 @@ interface AppContextType {
   isAdmin: boolean;
   loading: boolean;
   recipesLoading: boolean;
+  adminMealsLoading: boolean;
+  adminRecipesLoading: boolean;
   meals: Meal[];
   recipes: Recipe[];
   login: (email: string, pass: string) => Promise<boolean>;
@@ -58,9 +60,23 @@ interface AppContextType {
     updateMeal: (mealId: string, mealData: Partial<Meal>, imageFile?: File) => Promise<void>;
     deleteMeal: (mealId: string) => Promise<void>;
     toggleMealAvailability: (mealId: string) => Promise<void>;
+    fetchMealsByWeek: (week: number, page?: number, limit?: number) => Promise<{
+      meals: Meal[];
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    }>;
     addRecipe: (recipeData: Partial<Recipe>, imageFile?: File) => Promise<void>;
     updateRecipe: (recipeId: string, recipeData: Partial<Recipe>, imageFile?: File) => Promise<void>;
     deleteRecipe: (recipeId: string) => Promise<void>;
+    fetchRecipes: (page?: number, limit?: number, search?: string) => Promise<{
+      recipes: Recipe[];
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    }>;
     updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
     refreshData: () => Promise<void>;
     addCoupon: (couponData: { code: string; type: 'percent' | 'amount'; value: number; active?: boolean }) => Promise<{ ok: boolean; error?: string }>;
@@ -105,7 +121,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [orders, setOrders] = useState<Order[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [adminMeals, setAdminMeals] = useState<Meal[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [adminRecipes, setAdminRecipes] = useState<Recipe[]>([]);
   const [recipesLoading, setRecipesLoading] = useState(true);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -113,6 +131,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     readStorage<DeliveryDetails | null>('deliveryDetails', null)
   );
   const [loading, setLoading] = useState(false);
+  const [adminMealsLoading, setAdminMealsLoading] = useState(false);
+  const [adminRecipesLoading, setAdminRecipesLoading] = useState(false);
 
   useEffect(() => {
     fetchMeals();
@@ -488,6 +508,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const newMeal = await res.json();
     setMeals(prev => [newMeal, ...prev]);
+    setAdminMeals(prev => [newMeal, ...prev]);
     setLoading(false);
   };
 
@@ -525,6 +546,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const updated = await res.json();
     setMeals(prev => prev.map(m => m._id === id ? updated : m));
+    setAdminMeals(prev => prev.map(m => m._id === id ? updated : m));
     setLoading(false);
   };
 
@@ -535,6 +557,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       headers: { 'Authorization': `Bearer ${adminUser?.token}` }
     });
     setMeals(prev => prev.filter(m => m._id !== id));
+    setAdminMeals(prev => prev.filter(m => m._id !== id));
   };
 
   const adminToggleMeal = async (id: string) => {
@@ -550,6 +573,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const updated = await res.json();
     setMeals(prev => prev.map(m => m._id === id ? updated : m));
+    setAdminMeals(prev => prev.map(m => m._id === id ? updated : m));
+  };
+
+  const adminFetchMealsByWeek = async (week: number, page = 1, limit = 12) => {
+    if (!adminUser?.token) {
+      return { meals: [], page, limit, total: 0, totalPages: 1 };
+    }
+    setAdminMealsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        week: String(week),
+        page: String(page),
+        limit: String(limit),
+      });
+      const res = await fetch(`${API_BASE_URL}/admin/meals?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+      });
+      const data = await res.json();
+      setAdminMeals(data.meals || []);
+      return {
+        meals: data.meals || [],
+        page: data.page || page,
+        limit: data.limit || limit,
+        total: data.total || 0,
+        totalPages: data.totalPages || 1,
+      };
+    } finally {
+      setAdminMealsLoading(false);
+    }
   };
 
   const adminAddRecipe = async (recipeData: Partial<Recipe>, imageFile?: File) => {
@@ -582,6 +634,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const newRecipe = await res.json();
     setRecipes(prev => [newRecipe, ...prev]);
+    setAdminRecipes(prev => [newRecipe, ...prev]);
     setLoading(false);
   };
 
@@ -615,6 +668,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     const updated = await res.json();
     setRecipes(prev => prev.map(r => r._id === id ? updated : r));
+    setAdminRecipes(prev => prev.map(r => r._id === id ? updated : r));
     setLoading(false);
   };
 
@@ -624,8 +678,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${adminUser?.token}` }
     });
-    const updated = await res.json();
-    setRecipes(prev => prev.map(r => r._id === id ? updated : r));
+    if (res.ok) {
+      setRecipes(prev => prev.filter(r => r._id !== id));
+      setAdminRecipes(prev => prev.filter(r => r._id !== id));
+      return;
+    }
+    await res.json();
+  };
+
+  const adminFetchRecipes = async (page = 1, limit = 12, search = '') => {
+    if (!adminUser?.token) {
+      return { recipes: [], page, limit, total: 0, totalPages: 1 };
+    }
+    setAdminRecipesLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+      if (search) params.set('search', search);
+      const res = await fetch(`${API_BASE_URL}/admin/recipes?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+      });
+      const data = await res.json();
+      setAdminRecipes(data.recipes || []);
+      return {
+        recipes: data.recipes || [],
+        page: data.page || page,
+        limit: data.limit || limit,
+        total: data.total || 0,
+        totalPages: data.totalPages || 1,
+      };
+    } finally {
+      setAdminRecipesLoading(false);
+    }
   };
 
   const adminRefresh = async () => {
@@ -685,14 +771,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const adminFetchRecipes = async () => {
-    if (!adminUser?.token) return;
-    const res = await fetch(`${API_BASE_URL}/admin/recipes`, {
-      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
-    });
-    const data = await res.json();
-    setRecipes(data);
-  };
+  // adminFetchRecipes replaced with paginated version above
 
   const adminFetchUsers = async (
     page = 1,
@@ -746,7 +825,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      user, selectedPlan, cart, orders, deliveryDetails, isLoggedIn, isAdmin, loading, meals, recipes, recipesLoading,
+      user, selectedPlan, cart, orders, deliveryDetails, isLoggedIn, isAdmin, loading, meals, recipes, recipesLoading, adminMealsLoading, adminRecipesLoading,
       adminUser,
       login, signup, adminLogin, logout, selectPlan: setSelectedPlan, addMealToCart, 
       adminLogout,
@@ -758,8 +837,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       placeOrder,
       pricing,
       adminData: {
-        meals,
-        recipes,
+        meals: adminMeals,
+        recipes: adminRecipes,
         users: adminUsers,
         coupons,
         allOrders: orders,
@@ -767,9 +846,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateMeal: adminUpdateMeal,
         deleteMeal: adminDeleteMeal,
         toggleMealAvailability: adminToggleMeal,
+        fetchMealsByWeek: adminFetchMealsByWeek,
         addRecipe: adminAddRecipe,
         updateRecipe: adminUpdateRecipe,
         deleteRecipe: adminDeleteRecipe,
+        fetchRecipes: adminFetchRecipes,
         updateOrderStatus: adminUpdateOrderStatus,
         refreshData: async () => {
           await adminRefresh();

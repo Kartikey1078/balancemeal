@@ -1,12 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Minus, Flame, ChevronRight, ShoppingCart, Leaf, Wind } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext.tsx';
+import { Meal } from '../types';
+import { MealCardSkeleton } from '../components/skeleton/MealCardSkeleton';
+
+const MealCard = React.lazy(() => import('../components/meals/MealCard').then(module => ({
+  default: module.MealCard,
+})));
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const MealSelection: React.FC = () => {
-  const { cart, updateMealQuantity, addMealToCart, pricing, meals } = useApp();
+  const { cart, updateMealQuantity, addMealToCart, pricing } = useApp();
   const [filter, setFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
   const [baseSelections, setBaseSelections] = useState<Record<string, string>>({});
+  const [weekMeals, setWeekMeals] = useState<Meal[]>([]);
+  const [mealsLoading, setMealsLoading] = useState(true);
   const navigate = useNavigate();
 
   const getWeekOfYear = (date: Date) => {
@@ -17,23 +27,28 @@ export const MealSelection: React.FC = () => {
     return Math.floor((dayOfYear - 1) / 7) + 1;
   };
 
-  const availableWeeks = useMemo(() => {
-    const weekSet = new Set<number>();
-    meals.forEach((meal) => weekSet.add(meal.week ?? 1));
-    return Array.from(weekSet).sort((a, b) => a - b);
-  }, [meals]);
-
   const activeWeek = useMemo(() => {
     const rotationWeek = ((getWeekOfYear(new Date()) - 1) % 6) + 1;
-    if (availableWeeks.length === 0) return rotationWeek;
-    const candidates = [
-      ...Array.from({ length: 6 }, (_, i) => ((rotationWeek - 1 + i) % 6) + 1),
-    ];
-    const nextWeek = candidates.find((week) => availableWeeks.includes(week));
-    return nextWeek ?? rotationWeek;
-  }, [availableWeeks]);
+    return rotationWeek;
+  }, []);
 
-  const filteredMeals = meals.filter((meal) => {
+  useEffect(() => {
+    const loadMeals = async () => {
+      setMealsLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/meals?week=${activeWeek}`);
+        const data = await res.json();
+        setWeekMeals(Array.isArray(data) ? data : []);
+      } catch {
+        setWeekMeals([]);
+      } finally {
+        setMealsLoading(false);
+      }
+    };
+    loadMeals();
+  }, [activeWeek]);
+
+  const filteredMeals = weekMeals.filter((meal) => {
     const week = meal.week ?? 1;
     if (week !== activeWeek) return false;
     if (filter === 'veg') return meal.isVeg;
@@ -75,113 +90,42 @@ export const MealSelection: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-10">
-          {filteredMeals.map((meal) => {
-            const baseOptions = meal.baseOptions || [];
-            const cartBaseSelection = cart.find((item) => {
-              const sameMeal = item.meal._id === meal._id || item.meal.id === meal.id;
-              return sameMeal && item.baseOption;
-            })?.baseOption;
-            const selectedBase =
-              baseOptions.length > 0
-                ? baseSelections[meal._id!] || cartBaseSelection || baseOptions[0]
-                : undefined;
-            const mealKey = meal._id || meal.id || meal.name;
-            const qty = getMealQuantity(mealKey, selectedBase);
-            return (
-              <div
-                key={`${mealKey}-${selectedBase || 'default'}`}
-                className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-700 flex flex-col group w-full max-w-[420px] mx-auto md:max-w-none"
-              >
-                <div className="relative h-56 sm:h-64 lg:h-72 overflow-hidden">
-                  <img src={meal.image} alt={meal.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]" />
-                  <div className="absolute top-6 left-6 px-4 py-2 rounded-xl text-[10px] font-black uppercase bg-black/50 backdrop-blur text-white flex items-center gap-2">
-                    {meal.isVeg ? <Leaf className="w-3 h-3" /> : <Wind className="w-3 h-3" />}
-                    {meal.isVeg ? 'Plant' : 'Protein'}
-                  </div>
-                  <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur px-3 py-2 rounded-xl text-[10px] font-black text-olive-800 flex items-center gap-2 shadow-xl">
-                    <Flame className="w-4 h-4 text-gold-500" /> {meal.calories}
-                  </div>
-                </div>
-
-                <div className="p-6 sm:p-8 lg:p-10 flex-1 flex flex-col">
-                  <h3 className="text-xl sm:text-2xl font-black text-olive-800 tracking-tight mb-4 break-words">{meal.name}</h3>
-                  {/* <p className="text-gray-400 text-sm italic mb-10 line-clamp-2">"{meal.description}"</p> */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 sm:gap-1.5 mb-4">
-                    {[
-                      { label: 'Calories', value: meal.calories },
-                      { label: 'Protein', value: meal.protein },
-                      { label: 'Fat', value: meal.fat },
-                      { label: 'Carbs', value: meal.carbs },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="bg-olive-50 border border-olive-100/60 rounded-md px-1.5 py-1.5 text-center"
-                      >
-                        <div className="text-[6px] font-black text-olive-500 uppercase tracking-[0.16em]">
-                          {item.label}
-                        </div>
-                        <div className="mt-0.5 text-[13px] font-black text-olive-800 leading-tight">
-                          {item.value ?? '--'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {baseOptions.length > 0 && (
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                          Choose Base
-                        </label>
-                        <span className="text-[10px] font-black text-olive-700 uppercase tracking-widest">
-                          {selectedBase}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {baseOptions.map((option) => {
-                          const selected = option === selectedBase;
-                          return (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() =>
-                                setBaseSelections((prev) => ({
-                                  ...prev,
-                                  [meal._id!]: option,
-                                }))
-                              }
-                              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
-                                selected
-                                  ? 'bg-olive-800 text-white border-olive-800 shadow-lg'
-                                  : 'bg-olive-50 text-olive-700 border-olive-100 hover:bg-olive-100'
-                              }`}
-                            >
-                              {option}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="mt-3 text-[11px] text-gray-400 font-medium">
-                        Pick a base to customize this meal.
-                      </p>
-                    </div>
-                  )}
-
-                  {qty > 0 ? (
-                    <div className="flex items-center justify-between bg-olive-50 rounded-[1.5rem] p-2 border border-olive-100/50">
-                      <button onClick={() => updateMealQuantity(mealKey, -1, selectedBase)} className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl text-olive-800 shadow-sm"><Minus /></button>
-                      <span className="font-black text-olive-800">{qty}</span>
-                      <button onClick={() => updateMealQuantity(mealKey, 1, selectedBase)} className="w-12 h-12 flex items-center justify-center olive-gradient rounded-2xl text-white shadow-lg"><Plus /></button>
-                    </div>
-                  ) : (
-                    <button onClick={() => addMealToCart(meal, selectedBase)} className="w-full py-5 rounded-[1.5rem] font-black text-sm uppercase bg-olive-800 text-white hover:bg-gold-500 shadow-xl transition-all">
-                      Add Asset{selectedBase ? ` · ${selectedBase}` : ''}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {mealsLoading
+            ? Array.from({ length: 8 }).map((_, idx) => (
+                <MealCardSkeleton key={`meal-skeleton-${idx}`} />
+              ))
+            : filteredMeals.map((meal) => {
+                const baseOptions = meal.baseOptions || [];
+                const cartBaseSelection = cart.find((item) => {
+                  const sameMeal = item.meal._id === meal._id || item.meal.id === meal.id;
+                  return sameMeal && item.baseOption;
+                })?.baseOption;
+                const mealKey = meal._id || meal.id || meal.name;
+                const selectedBase =
+                  baseOptions.length > 0
+                    ? baseSelections[mealKey] || cartBaseSelection || baseOptions[0]
+                    : undefined;
+                const qty = getMealQuantity(mealKey, selectedBase);
+                return (
+                  <Suspense key={`${mealKey}-${selectedBase || 'default'}`} fallback={<MealCardSkeleton />}>
+                    <MealCard
+                      meal={meal}
+                      baseOptions={baseOptions}
+                      selectedBase={selectedBase}
+                      quantity={qty}
+                      onSelectBase={(option) =>
+                        setBaseSelections((prev) => ({
+                          ...prev,
+                          [mealKey]: option,
+                        }))
+                      }
+                      onAdd={() => addMealToCart(meal, selectedBase)}
+                      onIncrement={() => updateMealQuantity(mealKey, 1, selectedBase)}
+                      onDecrement={() => updateMealQuantity(mealKey, -1, selectedBase)}
+                    />
+                  </Suspense>
+                );
+              })}
         </div>
       </div>
 
