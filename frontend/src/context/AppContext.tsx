@@ -15,6 +15,7 @@ interface AppContextType {
   isLoggedIn: boolean;
   isAdmin: boolean;
   loading: boolean;
+  recipesLoading: boolean;
   meals: Meal[];
   recipes: Recipe[];
   login: (email: string, pass: string) => Promise<boolean>;
@@ -105,6 +106,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [recipesLoading, setRecipesLoading] = useState(true);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [deliveryDetails, setDeliveryDetails] = useState<DeliveryDetails | null>(() =>
@@ -148,12 +150,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const fetchRecipes = async () => {
+    setRecipesLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/recipes`);
       const data = await res.json();
       setRecipes(data);
     } catch (e) {
       console.error('Fetch recipes failed');
+    } finally {
+      setRecipesLoading(false);
     }
   };
 
@@ -741,7 +746,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      user, selectedPlan, cart, orders, deliveryDetails, isLoggedIn, isAdmin, loading, meals, recipes,
+      user, selectedPlan, cart, orders, deliveryDetails, isLoggedIn, isAdmin, loading, meals, recipes, recipesLoading,
       adminUser,
       login, signup, adminLogin, logout, selectPlan: setSelectedPlan, addMealToCart, 
       adminLogout,

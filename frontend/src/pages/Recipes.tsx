@@ -2,9 +2,10 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Flame, Tag } from 'lucide-react';
 import { useApp } from '../context/AppContext.tsx';
+import { RecipeSkeleton } from '../components/skeleton/RecipeSkeleton';
 
 export const Recipes: React.FC = () => {
-  const { recipes } = useApp();
+  const { recipes, recipesLoading } = useApp();
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const categories = useMemo(
@@ -46,7 +47,13 @@ export const Recipes: React.FC = () => {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {recipesLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <RecipeSkeleton key={`recipe-skeleton-${idx}`} />
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-gray-400 text-sm">No recipes available.</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10">
