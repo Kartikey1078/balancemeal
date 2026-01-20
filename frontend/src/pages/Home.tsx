@@ -1,15 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Star, ArrowRight, Play, Award, Zap, Heart, Sparkles } from 'lucide-react';
+import { Check, Star, ArrowRight, Play, Award, Zap, Heart, Sparkles, MapPin, Phone } from 'lucide-react';
 import { NutritiousMealPlans } from '../components/home/NutritiousMealPlans';
 import { HowItWorks } from '../components/home/HowItWorks';
 import { BalancedDiet } from '../components/home/BalancedDiet';
 import { QueryMapSection } from '../components/home/QueryMapSection';
 import { Testimonials } from '../components/home/Testimonials';
 
-const FeatureCard = ({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) => (
-  <div className="p-10 rounded-[2.5rem] bg-white border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group">
-    <div className="w-16 h-16 bg-olive-50 rounded-2xl flex items-center justify-center text-olive-800 mb-8 group-hover:scale-110 group-hover:bg-gold-500 group-hover:text-white transition-all duration-500">
+const FeatureCard = ({
+  icon: Icon,
+  title,
+  desc,
+  gradient,
+}: {
+  icon: any;
+  title: string;
+  desc: string;
+  gradient: string;
+}) => (
+  <div className="p-10 rounded-[2.5rem] bg-white border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden">
+    <div className="absolute -top-20 -right-16 w-40 h-40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[40px] bg-[#ff7733]/20" />
+    <div className="absolute -bottom-24 -left-16 w-52 h-52 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-[50px] bg-[#026255]/20" />
+    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white mb-8 shadow-lg ${gradient} group-hover:scale-110 transition-transform duration-500`}>
       <Icon className="w-8 h-8" />
     </div>
     <h3 className="text-2xl font-extrabold mb-4 text-olive-800 tracking-tight">{title}</h3>
@@ -249,16 +261,19 @@ export const Home: React.FC = () => {
               icon={Zap} 
               title="Hyper-Efficiency" 
               desc="Save 15+ hours per week on cooking and meal prep. Optimized for your busy lifestyle." 
+              gradient="bg-[linear-gradient(135deg,#026255_0%,#0d8a77_100%)]"
             />
             <FeatureCard 
               icon={Heart} 
               title="Whole Nutrition" 
               desc="Precisely calculated macros and micros for sustained energy and metabolic health." 
+              gradient="bg-[linear-gradient(135deg,#ff7733_0%,#ff9b66_100%)]"
             />
             <FeatureCard 
               icon={Check} 
               title="Absolute Choice" 
               desc="Our 100% dynamic rotation ensures you never eat the same meal twice in a month." 
+              gradient="bg-[linear-gradient(135deg,#0f4c81_0%,#38bdf8_100%)]"
             />
           </div>
         </div>
@@ -302,31 +317,38 @@ export const Home: React.FC = () => {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={handleDismissPrompt}
           ></div>
-          <div className="relative z-10 w-full max-w-lg bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl p-10">
-            <h3 className="text-2xl font-black text-olive-800 tracking-tight mb-3">
-              Use your location?
-            </h3>
-            <p className="text-gray-500 mb-8">
+          <div className="relative z-10 w-full max-w-sm bg-white rounded-[2rem] border border-gray-100 shadow-2xl p-7 overflow-hidden">
+            <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-[#ff7733]/20 blur-[30px]" />
+            <div className="absolute -bottom-16 -left-12 w-32 h-32 rounded-full bg-[#026255]/20 blur-[30px]" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-[#026255]/10 text-[#026255] flex items-center justify-center">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-black text-olive-800 tracking-tight">
+                Use your location?
+              </h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
               We’ll auto-fill your city and pin code for faster checkout.
             </p>
             {locationError && (
-              <div className="mb-6 text-sm font-bold text-rose-500">
+              <div className="mb-4 text-xs font-black text-rose-500">
                 {locationError}
               </div>
             )}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={handleUseLocation}
                 disabled={locating}
-                className="flex-1 olive-gradient text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:shadow-[0_12px_30px_rgba(45,58,45,0.25)] transition-all disabled:opacity-60"
+                className="flex-1 text-white py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all disabled:opacity-60 bg-[linear-gradient(135deg,#026255_0%,#0d8a77_100%)] hover:shadow-[0_10px_24px_rgba(2,98,85,0.25)]"
               >
                 {locating ? 'Locating...' : 'Allow Location'}
               </button>
               <button
                 type="button"
                 onClick={handleDismissPrompt}
-                className="flex-1 bg-white border border-gray-200 text-olive-800 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 transition-all"
+                className="flex-1 bg-white border border-gray-200 text-olive-800 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
               >
                 Not Now
               </button>
@@ -340,11 +362,18 @@ export const Home: React.FC = () => {
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={handleSkipPhone}
           ></div>
-          <div className="relative z-10 w-full max-w-lg bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl p-10">
-            <h3 className="text-2xl font-black text-olive-800 tracking-tight mb-3">
-              Add your phone number
-            </h3>
-            <p className="text-gray-500 mb-8">
+          <div className="relative z-10 w-full max-w-sm bg-white rounded-[2rem] border border-gray-100 shadow-2xl p-7 overflow-hidden">
+            <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-[#026255]/20 blur-[30px]" />
+            <div className="absolute -bottom-16 -left-12 w-32 h-32 rounded-full bg-[#ff7733]/20 blur-[30px]" />
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-[#ff7733]/10 text-[#ff7733] flex items-center justify-center">
+                <Phone className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-black text-olive-800 tracking-tight">
+                Add your phone number
+              </h3>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
               Optional, but helps with delivery updates at checkout.
             </p>
             <input
@@ -355,25 +384,25 @@ export const Home: React.FC = () => {
                 setPhoneError('');
               }}
               placeholder="(555) 000-0000"
-              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 font-bold focus:outline-none"
+              className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none"
             />
             {phoneError && (
-              <div className="mt-4 text-sm font-bold text-rose-500">
+              <div className="mt-3 text-xs font-black text-rose-500">
                 {phoneError}
               </div>
             )}
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <button
                 type="button"
                 onClick={handleSavePhone}
-                className="flex-1 olive-gradient text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:shadow-[0_12px_30px_rgba(45,58,45,0.25)] transition-all"
+                className="flex-1 text-white py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all bg-[linear-gradient(135deg,#026255_0%,#0d8a77_100%)] hover:shadow-[0_10px_24px_rgba(2,98,85,0.25)]"
               >
                 Save Number
               </button>
               <button
                 type="button"
                 onClick={handleSkipPhone}
-                className="flex-1 bg-white border border-gray-200 text-olive-800 py-4 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-gray-50 transition-all"
+                className="flex-1 bg-white border border-gray-200 text-olive-800 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
               >
                 Skip for Now
               </button>
