@@ -86,13 +86,13 @@ export const Plans: React.FC = () => {
 
               <button 
                 onClick={() => handleSelect(plan)}
-                className={`w-full py-7 rounded-[2rem] font-black text-xl transition-all flex items-center justify-center gap-4 shadow-2xl group ${
+                className={`w-full py-4 sm:py-7 rounded-[1.5rem] sm:rounded-[2rem] font-black text-base sm:text-xl transition-all flex items-center justify-center gap-3 sm:gap-4 shadow-2xl group ${
                   plan.badge 
                     ? 'gold-gradient text-white shadow-gold-500/30 hover:shadow-gold-500/40' 
                     : 'bg-olive-800 text-white shadow-olive-800/10 hover:bg-charcoal'
                 }`}
               >
-                Choose {plan.name} <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
+                Choose {plan.name} <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-2 transition-transform" />
               </button>
             </div>
           ))}
