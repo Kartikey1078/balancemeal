@@ -104,7 +104,7 @@ export const Plans: React.FC = () => {
               <ShieldCheck className="w-12 h-12" />
             </div>
             <div className="flex-1">
-              <h4 className="text-2xl font-black text-olive-800 tracking-tight mb-2">The Vital Guarantee</h4>
+              <h4 className="text-2xl font-black text-olive-800 tracking-tight mb-2">The Balanced Meal Guarantee</h4>
               <p className="text-gray-500 font-medium leading-relaxed">Cancel, skip, or modify your subscription with zero penalties. We believe in our product, so we never lock you in.</p>
             </div>
             <a href="#" className="font-black text-gold-600 border-b-2 border-gold-500/30 pb-1 shrink-0 hover:text-gold-500 transition-colors">Read our policy</a>

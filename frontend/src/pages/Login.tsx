@@ -53,7 +53,7 @@ export const Login: React.FC = () => {
             Join the elite circle of individuals who never compromise on their health or their time.
           </p>
         </div>
-        <div className="absolute bottom-10 left-10 text-olive-100/20 font-black text-9xl tracking-tighter pointer-events-none uppercase">Vital</div>
+        <div className="absolute bottom-10 left-10 text-olive-100/20 font-black text-9xl tracking-tighter pointer-events-none uppercase">BALANCED MEAL</div>
       </div>
 
       {/* Form Side */}
@@ -93,7 +93,7 @@ export const Login: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="name@vital.com"
+                  placeholder="name@BalancedMeal.com"
                   className="w-full pl-14 pr-6 py-5 rounded-2xl bg-gray-50 border border-transparent focus:bg-white focus:border-gold-500/30 focus:outline-none focus:ring-4 focus:ring-gold-500/5 transition-all text-sm font-bold"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -149,7 +149,7 @@ export const Login: React.FC = () => {
                     if (recoveryMessage) setRecoveryMessage('');
                     if (recoveryError) setRecoveryError('');
                   }}
-                  placeholder="name@vital.com"
+                  placeholder="name@BalancedMeal.com"
                   className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-bold focus:outline-none"
                 />
                 {recoveryError && (

@@ -92,7 +92,7 @@ export const ResetPassword: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold focus:outline-none"
-                placeholder="name@vital.com"
+                placeholder="name@BalancedMeal.com"
               />
             </div>
             <div>
