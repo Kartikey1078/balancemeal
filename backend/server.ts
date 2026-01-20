@@ -40,7 +40,11 @@ app.use(
    CONFIG
 ====================== */
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'vital_eats_2024_secure_key';
+const JWT_SECRET = process.env.JWT_SECRET 
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined in environment variables');
+  }
+;
 
 /* ======================
    SQUARE CLIENT
@@ -653,6 +657,34 @@ app.post('/api/admin/recipes', adminOnly, async (req, res) => {
   const recipe = new Recipe(req.body);
   await recipe.save();
   res.status(201).json(recipe);
+});
+
+// Admin: Bulk create recipes
+app.post('/api/admin/recipes/bulk', adminOnly, async (req, res) => {
+  const payload = Array.isArray(req.body) ? req.body : req.body?.recipes;
+  if (!Array.isArray(payload) || payload.length === 0) {
+    return res.status(400).json({ error: 'recipes array is required' });
+  }
+
+  const created: any[] = [];
+  const errors: Array<{ index: number; error: string }> = [];
+
+  for (let i = 0; i < payload.length; i += 1) {
+    const item = payload[i];
+    const validationErrors = validateRecipePayload(item);
+    if (validationErrors.length) {
+      errors.push({ index: i, error: validationErrors.join(', ') });
+      continue;
+    }
+    const recipe = new Recipe(item);
+    await recipe.save();
+    created.push(recipe);
+  }
+
+  if (created.length === 0) {
+    return res.status(400).json({ error: 'No recipes created', errors });
+  }
+  res.status(201).json({ createdCount: created.length, errors, recipes: created });
 });
 
 app.patch('/api/admin/recipes/:id', adminOnly, async (req, res) => {
