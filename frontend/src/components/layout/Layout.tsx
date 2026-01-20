@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag, LogOut, Menu, X, Leaf, User } from 'lucide-react';
+import { ShoppingBag, LogOut, Menu, X, Leaf, User, ChevronRight, Facebook, Instagram } from 'lucide-react';
 import { useApp } from '../../context/AppContext.tsx';
 
 export const Header: React.FC = () => {
@@ -14,6 +14,10 @@ export const Header: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -30,20 +34,21 @@ export const Header: React.FC = () => {
         isScrolled ? 'py-4' : 'py-6'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6">
-        <div className={`transition-all duration-500 rounded-3xl flex items-center justify-between px-8 py-4 ${
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className={`transition-all duration-500 rounded-3xl flex items-center justify-between gap-4 px-4 sm:px-8 py-3 sm:py-4 ${
           isScrolled ? 'bg-white/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.04)]' : 'bg-transparent'
         }`}>
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 olive-gradient rounded-xl flex items-center justify-center text-white shadow-lg group-hover:rotate-12 transition-transform duration-500">
-              <Leaf className="w-6 h-6" />
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="w-20 h-12 sm:w-24 sm:h-14 flex items-center justify-center overflow-hidden">
+              <img
+                src="/logo/balanceMeal.png"
+                alt="BalancedMeal"
+                className="w-20 h-12 sm:w-24 sm:h-14 object-contain"
+              />
             </div>
-            <span className="text-xl font-extrabold tracking-tight text-olive-800">
-              Vital<span className="text-gold-500">Eats</span>
-            </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-10">
+          <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
@@ -60,9 +65,9 @@ export const Header: React.FC = () => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-4">
-            <Link to="/cart" className="relative p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group">
-              <ShoppingBag className="w-5 h-5 text-olive-800" />
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link to="/cart" className="relative p-2 sm:p-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors group">
+              <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 text-olive-800" />
               {cart.length > 0 && (
                 <span className="absolute -top-1 -right-1 gold-gradient text-white text-[10px] font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
                   {cart.length}
@@ -70,11 +75,11 @@ export const Header: React.FC = () => {
               )}
             </Link>
 
-            <div className="h-6 w-px bg-gray-200 mx-2 hidden md:block"></div>
+            <div className="h-6 w-px bg-gray-200 mx-2 hidden lg:block"></div>
 
             {isLoggedIn ? (
               <div className="flex items-center gap-4">
-                <div className="hidden md:block text-right">
+                <div className="hidden lg:block text-right">
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Account</p>
                   <p className="text-sm font-bold text-olive-800">{user?.name.split(' ')[0]}</p>
                 </div>
@@ -88,13 +93,18 @@ export const Header: React.FC = () => {
             ) : (
               <Link 
                 to="/login" 
-                className="olive-gradient text-white px-7 py-3 rounded-2xl text-sm font-bold shadow-xl shadow-olive-800/10 hover:shadow-olive-800/20 hover:-translate-y-0.5 transition-all"
+                className="olive-gradient text-white px-4 sm:px-7 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold shadow-xl shadow-olive-800/10 hover:shadow-olive-800/20 hover:-translate-y-0.5 transition-all"
               >
                 Sign In
               </Link>
             )}
 
-            <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden p-2 text-olive-800">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 text-olive-800"
+              aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
+            >
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
           </div>
@@ -102,24 +112,110 @@ export const Header: React.FC = () => {
       </div>
 
       {/* Mobile Menu Overlay */}
-      <div className={`md:hidden fixed inset-0 bg-white/95 backdrop-blur-2xl z-40 transition-all duration-500 ${
+      <div className={`lg:hidden fixed inset-0 bg-white/95 backdrop-blur-2xl z-40 transition-all duration-500 ${
         isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
       }`}>
-        <div className="flex flex-col items-center justify-center h-full gap-8">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between px-6 pt-6">
+          <div className="flex items-center gap-3">
+            <div className="w-20 h-12 flex items-center justify-center overflow-hidden">
+              <img
+                src="/logo/balanceMeal.png"
+                alt="BalancedMeal"
+                className="w-20 h-12 object-contain"
+              />
+            </div>
+            </div>
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-3xl font-bold text-olive-800"
+              className="p-2 rounded-xl text-olive-800 hover:bg-olive-50 transition-colors"
+              aria-label="Close menu"
             >
-              {link.name}
-            </Link>
-          ))}
+              <X />
+            </button>
+          </div>
+
+          <div className="px-6 pt-6 pb-4">
+            <div className="rounded-3xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden">
+              <div className="px-6 py-5 border-b border-gray-100">
+                {isLoggedIn ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-olive-50 flex items-center justify-center text-olive-700">
+                      <User className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Account</p>
+                      <p className="text-sm font-bold text-olive-800">{user?.name}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Welcome</p>
+                      <p className="text-sm font-bold text-olive-800">Sign in to manage meals</p>
+                    </div>
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="px-4 py-2 rounded-2xl gold-gradient text-white text-xs font-black uppercase tracking-widest"
+                    >
+                      Sign In
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              <div className="px-4 py-4">
+                <div className="grid gap-2">
+                  {navLinks.map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`px-5 py-4 rounded-2xl text-base font-black flex items-center justify-between transition-all ${
+                        location.pathname === link.path
+                          ? 'bg-olive-800 text-white'
+                          : 'bg-olive-50 text-olive-800 hover:bg-olive-100'
+                      }`}
+                    >
+                      {link.name}
+                      <ChevronRight className="w-5 h-5" />
+                    </Link>
+                  ))}
+                  <Link
+                    to="/cart"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-5 py-4 rounded-2xl text-base font-black flex items-center justify-between bg-olive-50 text-olive-800 hover:bg-olive-100 transition-all"
+                  >
+                    Cart
+                    <ChevronRight className="w-5 h-5" />
+                  </Link>
+                </div>
+              </div>
+
+              {isLoggedIn && (
+                <div className="px-6 pb-6">
+                  <button
+                    onClick={() => logout()}
+                    className="w-full px-6 py-4 rounded-2xl border border-red-200 text-red-500 font-black text-sm uppercase tracking-widest hover:bg-red-50 transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {!isLoggedIn && (
-            <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="px-12 py-5 gold-gradient rounded-3xl text-white font-bold text-xl">
-              Sign In
-            </Link>
+            <div className="mt-auto px-6 pb-8">
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block w-full text-center px-6 py-4 rounded-2xl olive-gradient text-white font-black text-sm uppercase tracking-widest shadow-xl"
+              >
+                Continue to Sign In
+              </Link>
+            </div>
           )}
         </div>
       </div>
@@ -138,21 +234,36 @@ export const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-16 mb-24">
           <div className="md:col-span-5">
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 olive-gradient rounded-2xl flex items-center justify-center text-white">
-                <Leaf className="w-7 h-7" />
+              <div className="w-20 h-12 rounded-2xl flex items-center justify-center overflow-hidden">
+                <img
+                  src="/logo/balanceMeal.png"
+                  alt="BalancedMeal"
+                  className="w-20 h-12 object-contain"
+                />
               </div>
-              <span className="text-2xl font-extrabold tracking-tight text-olive-800">VitalEats</span>
             </div>
             <p className="text-lg text-gray-500 leading-relaxed mb-10 max-w-sm">
               We're redefining healthy living through chef-led subscriptions that prioritize flavor, nutrition, and zero friction.
             </p>
             <div className="flex gap-4">
-              {['Twitter', 'Instagram', 'LinkedIn'].map(social => (
-                <a key={social} href="#" className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-gray-400 hover:text-gold-500 hover:bg-white hover:border-gold-500 transition-all duration-300">
-                  <span className="sr-only">{social}</span>
-                  <div className="w-5 h-5 border-2 border-current rounded-sm"></div>
-                </a>
-              ))}
+              <a
+                href="https://www.facebook.com/people/The-Nutrition-Box/61553161297273/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-blue-600 hover:text-white hover:bg-blue-600 hover:border-blue-600 transition-all duration-300"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a
+                href="https://www.instagram.com/nutritionbox.official/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center text-pink-500 hover:text-white hover:bg-pink-500 hover:border-pink-500 transition-all duration-300"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
             </div>
           </div>
           
@@ -226,7 +337,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         target="_blank"
         rel="noreferrer"
         aria-label="Chat on WhatsApp"
-        className="fixed bottom-6 right-6 z-[110] w-14 h-14 rounded-full bg-[#25D366] text-white shadow-xl shadow-green-200/40 flex items-center justify-center hover:scale-105 transition-transform"
+        className="fixed bottom-28 sm:bottom-14 right-1 z-[110] w-14 h-14 rounded-full bg-[#25D366] text-white shadow-xl shadow-green-200/40 flex items-center justify-center hover:scale-105 transition-transform"
       >
         <svg viewBox="0 0 32 32" className="w-7 h-7 fill-current" aria-hidden="true">
           <path d="M19.1 17.8c-.3-.2-1.8-.9-2.1-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0c-.3-.2-1.2-.4-2.3-1.4-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.2-.7.2-.2.3-.4.5-.6.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6 0-.2-.7-1.6-1-2.2-.3-.6-.6-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.7 0 1.6 1.2 3.1 1.3 3.3.2.2 2.3 3.5 5.6 4.9.8.3 1.4.6 1.9.7.8.2 1.6.2 2.2.1.7-.1 2.1-.8 2.4-1.6.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.4zM16 5.3c-5.9 0-10.7 4.8-10.7 10.7 0 1.9.5 3.8 1.4 5.4L5 27l6-1.6c1.6.9 3.3 1.3 5.1 1.3 5.9 0 10.7-4.8 10.7-10.7S21.9 5.3 16 5.3zm0 19.4c-1.6 0-3.2-.4-4.6-1.2l-.3-.2-3.5.9.9-3.4-.2-.3c-.8-1.4-1.3-3-1.3-4.7 0-5 4.1-9.1 9.1-9.1s9.1 4.1 9.1 9.1-4.1 9.1-9.1 9.1z" />

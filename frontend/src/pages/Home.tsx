@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Star, ArrowRight, Play, Award, Zap, Heart, Sparkles } from 'lucide-react';
+import { NutritiousMealPlans } from '../components/home/NutritiousMealPlans';
+import { HowItWorks } from '../components/home/HowItWorks';
+import { BalancedDiet } from '../components/home/BalancedDiet';
+import { QueryMapSection } from '../components/home/QueryMapSection';
+import { Testimonials } from '../components/home/Testimonials';
 
 const FeatureCard = ({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) => (
   <div className="p-10 rounded-[2.5rem] bg-white border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group">
@@ -222,17 +227,6 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <section className="py-20 border-y border-gray-100 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-wrap justify-center md:justify-between items-center gap-12 opacity-40 grayscale">
-            {['VOGUE', 'Forbes', 'WIRED', 'GQ', 'Health'].map(brand => (
-              <span key={brand} className="text-2xl font-black tracking-tighter italic">{brand}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Features Grid */}
       <section className="py-32 bg-[#F9FBF9]/50">
         <div className="max-w-7xl mx-auto px-6">
@@ -269,6 +263,12 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      <NutritiousMealPlans />
+      <HowItWorks />
+      <BalancedDiet />
+      <QueryMapSection />
+      <Testimonials />
 
       {/* Final Call */}
       <section className="py-32 px-6">

@@ -129,35 +129,38 @@ export const MealSelection: React.FC = () => {
         </div>
       </div>
 
-      <div className="fixed bottom-4 sm:bottom-10 left-1/2 -translate-x-1/2 z-[90] w-full max-w-5xl px-3 sm:px-6 pointer-events-none">
-        <div className="bg-olive-900/90 backdrop-blur-2xl rounded-[1.5rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-2xl border border-white/10 flex flex-col lg:flex-row items-center justify-between gap-4 sm:gap-10 pointer-events-auto">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-12 w-full lg:w-auto">
+      <div className="fixed bottom-3 sm:bottom-10 left-1/2 -translate-x-1/2 z-[90] w-full max-w-5xl px-3 sm:px-6 pointer-events-none">
+        <div className="bg-olive-900/90 backdrop-blur-2xl rounded-[1.25rem] sm:rounded-[3rem] px-4 py-3 sm:p-8 shadow-2xl border border-white/10 flex items-center justify-between gap-3 sm:gap-10 pointer-events-auto">
+          <div className="flex items-center gap-3 sm:gap-12">
             <div>
-              <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-2">Allocation</p>
-              <div className="flex items-end gap-3">
-                <span className="text-3xl sm:text-5xl font-black text-white">{pricing.totalMeals}</span>
-                <span className="text-white/20 text-lg sm:text-2xl font-black mb-1">/</span>
-                <span className="text-gold-500 text-lg sm:text-2xl font-black mb-1">{pricing.planUsed.mealLimit}</span>
+              <p className="hidden sm:block text-[9px] font-black text-white/40 uppercase tracking-widest mb-2">Allocation</p>
+              <div className="flex items-end gap-2">
+                <span className="text-2xl sm:text-5xl font-black text-white">{pricing.totalMeals}</span>
+                <span className="text-white/20 text-base sm:text-2xl font-black mb-0.5">/</span>
+                <span className="text-gold-500 text-base sm:text-2xl font-black mb-0.5">{pricing.planUsed.mealLimit}</span>
               </div>
+              <p className="sm:hidden text-[10px] font-black text-white/50 uppercase tracking-widest mt-1">Meals</p>
             </div>
             <div className="hidden md:block">
               <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-3">Subscription</p>
               <span className="text-lg font-black text-white">{pricing.planUsed.name}</span>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-3 sm:gap-16 w-full lg:w-auto">
-            <div className="text-center sm:text-right w-full sm:w-auto">
-              <p className="text-[9px] font-black text-white/40 uppercase mb-1">Weekly Commitment</p>
-              <div className="text-2xl sm:text-5xl font-black text-white tracking-tighter">${pricing.totalPrice.toFixed(2)}</div>
+          <div className="flex items-center gap-3 sm:gap-10">
+            <div className="text-right">
+              <p className="hidden sm:block text-[9px] font-black text-white/40 uppercase mb-1">Weekly Commitment</p>
+              <div className="text-xl sm:text-5xl font-black text-white tracking-tighter">${pricing.totalPrice.toFixed(2)}</div>
+              <p className="sm:hidden text-[10px] font-black text-white/50 uppercase tracking-widest">Weekly</p>
             </div>
             <button
               onClick={() => navigate('/cart')}
               disabled={pricing.totalMeals === 0}
-              className={`w-full sm:w-auto px-6 sm:px-12 py-4 sm:py-6 rounded-[1.5rem] sm:rounded-[2rem] font-black text-base sm:text-xl flex items-center justify-center gap-3 sm:gap-4 transition-all ${
+              className={`px-4 sm:px-12 py-3 sm:py-6 rounded-[1rem] sm:rounded-[2rem] font-black text-sm sm:text-xl flex items-center justify-center gap-2 sm:gap-4 transition-all ${
                 pricing.totalMeals === 0 ? 'bg-white/5 text-white/20' : 'gold-gradient text-white hover:scale-105'
               }`}
             >
-              Review <ChevronRight className="w-7 h-7" />
+              <span className="hidden sm:inline">Review</span>
+              <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7" />
             </button>
           </div>
         </div>
