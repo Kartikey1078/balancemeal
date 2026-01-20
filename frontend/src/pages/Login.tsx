@@ -29,7 +29,7 @@ export const Login: React.FC = () => {
       ? await login(email, pass)
       : await signup(name, email, pass);
     if (success) {
-      navigate('/dashboard');
+      navigate('/');
     } else {
       setError(isLoginMode ? 'Invalid email or password' : 'Email already exists');
     }
