@@ -62,6 +62,14 @@ export interface Recipe {
   createdAt?: string;
 }
 
+export interface NutritionTag {
+  _id?: string;
+  name: string;
+  key?: string;
+  active: boolean;
+  createdAt?: string;
+}
+
 export interface Coupon {
   _id?: string;
   code: string;

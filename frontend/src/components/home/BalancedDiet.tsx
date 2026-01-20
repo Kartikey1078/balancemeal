@@ -13,8 +13,8 @@ export const BalancedDiet: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-olive-50 text-olive-800 text-xs font-black uppercase tracking-[0.2em] mb-6">
-              <BarChart3 className="w-4 h-4 text-gold-500" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#026255]/10 text-[#026255] text-xs font-black uppercase tracking-[0.2em] mb-6">
+              <BarChart3 className="w-4 h-4 text-[#ff7733]" />
               Balanced Nutrition
             </div>
             <h2 className="text-4xl lg:text-6xl font-black text-olive-800 tracking-tight">

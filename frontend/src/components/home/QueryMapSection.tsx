@@ -99,7 +99,7 @@ export const QueryMapSection: React.FC = () => {
               </div>
               <button
                 type="button"
-                className="w-full olive-gradient text-white rounded-2xl py-4 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="w-full text-white rounded-2xl py-4 font-black text-sm uppercase tracking-widest flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 transition-all bg-[linear-gradient(135deg,#026255_0%,#0d8a77_100%)]"
               >
                 Send Message <Send className="w-4 h-4" />
               </button>

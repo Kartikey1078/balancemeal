@@ -32,8 +32,8 @@ export const NutritiousMealPlans: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-10 mb-16">
           <div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-olive-50 text-olive-800 text-xs font-black uppercase tracking-[0.2em] mb-6">
-              <Sparkles className="w-4 h-4 text-gold-500" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#026255]/10 text-[#026255] text-xs font-black uppercase tracking-[0.2em] mb-6">
+              <Sparkles className="w-4 h-4 text-[#ff7733]" />
               Our Nutritious Meal Plans
             </div>
             <h2 className="text-4xl lg:text-6xl font-black text-olive-800 tracking-tight">
@@ -62,7 +62,7 @@ export const NutritiousMealPlans: React.FC = () => {
                 <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-gold-400/10 blur-[40px]" />
                 <div className="absolute -bottom-24 -left-10 w-48 h-48 rounded-full bg-olive-800/10 blur-[60px]" />
               </div>
-              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gold-500">
+              <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#ff7733]">
                 {plan.highlight}
               </div>
               <h3 className="mt-4 text-2xl font-black text-olive-800">{plan.name}</h3>
@@ -83,7 +83,7 @@ export const NutritiousMealPlans: React.FC = () => {
               </div>
               <Link
                 to="/plans"
-                className="mt-8 inline-flex items-center justify-center gap-2 rounded-2xl olive-gradient text-white py-4 font-black text-sm uppercase tracking-widest hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                className="mt-8 inline-flex items-center justify-center gap-2 rounded-2xl text-white py-4 font-black text-sm uppercase tracking-widest hover:shadow-xl hover:-translate-y-0.5 transition-all bg-[linear-gradient(135deg,#026255_0%,#0d8a77_100%)]"
               >
                 View Plan <ArrowRight className="w-4 h-4" />
               </Link>

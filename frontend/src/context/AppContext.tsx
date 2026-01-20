@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Plan, Meal, CartItem, DeliveryDetails, Order, OrderStatus, Recipe, AdminUser, Coupon } from '../types.ts';
+import { User, Plan, Meal, CartItem, DeliveryDetails, Order, OrderStatus, Recipe, AdminUser, Coupon, NutritionTag } from '../types.ts';
 import { PLANS } from '../constants';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -18,8 +18,10 @@ interface AppContextType {
   recipesLoading: boolean;
   adminMealsLoading: boolean;
   adminRecipesLoading: boolean;
+  nutritionTagsLoading: boolean;
   meals: Meal[];
   recipes: Recipe[];
+  nutritionTags: NutritionTag[];
   login: (email: string, pass: string) => Promise<boolean>;
   signup: (name: string, email: string, pass: string) => Promise<boolean>;
   adminLogin: (email: string, pass: string) => Promise<boolean>;
@@ -77,6 +79,11 @@ interface AppContextType {
       total: number;
       totalPages: number;
     }>;
+    nutritionTags: NutritionTag[];
+    fetchNutritionTags: () => Promise<void>;
+    createNutritionTag: (name: string) => Promise<{ ok: boolean; error?: string }>;
+    updateNutritionTag: (id: string, updates: Partial<Pick<NutritionTag, 'name' | 'active'>>) => Promise<{ ok: boolean; error?: string }>;
+    deleteNutritionTag: (id: string) => Promise<void>;
     updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
     refreshData: () => Promise<void>;
     addCoupon: (couponData: { code: string; type: 'percent' | 'amount'; value: number; active?: boolean }) => Promise<{ ok: boolean; error?: string }>;
@@ -124,6 +131,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [adminMeals, setAdminMeals] = useState<Meal[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [adminRecipes, setAdminRecipes] = useState<Recipe[]>([]);
+  const [nutritionTags, setNutritionTags] = useState<NutritionTag[]>([]);
+  const [adminNutritionTags, setAdminNutritionTags] = useState<NutritionTag[]>([]);
   const [recipesLoading, setRecipesLoading] = useState(true);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -133,11 +142,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [loading, setLoading] = useState(false);
   const [adminMealsLoading, setAdminMealsLoading] = useState(false);
   const [adminRecipesLoading, setAdminRecipesLoading] = useState(false);
+  const [nutritionTagsLoading, setNutritionTagsLoading] = useState(false);
 
   useEffect(() => {
     fetchMeals();
     fetchRecipes();
+    fetchNutritionTags();
   }, []);
+
+  useEffect(() => {
+    if (!adminUser?.token) return;
+    adminFetchNutritionTags();
+  }, [adminUser?.token]);
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(cart));
@@ -179,6 +195,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('Fetch recipes failed');
     } finally {
       setRecipesLoading(false);
+    }
+  };
+
+  const fetchNutritionTags = async () => {
+    setNutritionTagsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/nutrition-tags`);
+      const data = await res.json();
+      setNutritionTags(Array.isArray(data) ? data : []);
+    } catch {
+      console.error('Fetch nutrition tags failed');
+    } finally {
+      setNutritionTagsLoading(false);
     }
   };
 
@@ -714,6 +743,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const adminFetchNutritionTags = async () => {
+    if (!adminUser?.token) return;
+    const res = await fetch(`${API_BASE_URL}/admin/nutrition-tags`, {
+      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+    });
+    const data = await res.json();
+    setAdminNutritionTags(Array.isArray(data) ? data : []);
+  };
+
+  const adminCreateNutritionTag = async (name: string) => {
+    if (!adminUser?.token) return { ok: false, error: 'Unauthorized' };
+    const res = await fetch(`${API_BASE_URL}/admin/nutrition-tags`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminUser?.token}`
+      },
+      body: JSON.stringify({ name })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { ok: false, error: data?.error || 'Failed to create tag' };
+    }
+    setAdminNutritionTags(prev => [data, ...prev]);
+    if (data.active) {
+      setNutritionTags(prev => [data, ...prev]);
+    }
+    return { ok: true };
+  };
+
+  const adminUpdateNutritionTag = async (
+    id: string,
+    updates: Partial<Pick<NutritionTag, 'name' | 'active'>>
+  ) => {
+    if (!adminUser?.token) return { ok: false, error: 'Unauthorized' };
+    const res = await fetch(`${API_BASE_URL}/admin/nutrition-tags/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminUser?.token}`
+      },
+      body: JSON.stringify(updates)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { ok: false, error: data?.error || 'Failed to update tag' };
+    }
+    setAdminNutritionTags(prev => prev.map(tag => (tag._id === id ? data : tag)));
+    setNutritionTags(prev => {
+      const exists = prev.some(tag => tag._id === id);
+      if (!data.active) {
+        return prev.filter(tag => tag._id !== id);
+      }
+      if (exists) {
+        return prev.map(tag => (tag._id === id ? data : tag));
+      }
+      return [data, ...prev];
+    });
+    return { ok: true };
+  };
+
+  const adminDeleteNutritionTag = async (id: string) => {
+    if (!adminUser?.token) return;
+    const res = await fetch(`${API_BASE_URL}/admin/nutrition-tags/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+    });
+    if (res.ok) {
+      setAdminNutritionTags(prev => prev.filter(tag => tag._id !== id));
+      setNutritionTags(prev => prev.filter(tag => tag._id !== id));
+    }
+  };
+
   const adminRefresh = async () => {
     if (!adminUser?.token) return;
     const res = await fetch(`${API_BASE_URL}/admin/stats`, {
@@ -825,7 +927,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      user, selectedPlan, cart, orders, deliveryDetails, isLoggedIn, isAdmin, loading, meals, recipes, recipesLoading, adminMealsLoading, adminRecipesLoading,
+      user, selectedPlan, cart, orders, deliveryDetails, isLoggedIn, isAdmin, loading, meals, recipes, recipesLoading, adminMealsLoading, adminRecipesLoading, nutritionTags, nutritionTagsLoading,
       adminUser,
       login, signup, adminLogin, logout, selectPlan: setSelectedPlan, addMealToCart, 
       adminLogout,
@@ -839,6 +941,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       adminData: {
         meals: adminMeals,
         recipes: adminRecipes,
+        nutritionTags: adminNutritionTags,
         users: adminUsers,
         coupons,
         allOrders: orders,
@@ -851,10 +954,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateRecipe: adminUpdateRecipe,
         deleteRecipe: adminDeleteRecipe,
         fetchRecipes: adminFetchRecipes,
+        fetchNutritionTags: adminFetchNutritionTags,
+        createNutritionTag: adminCreateNutritionTag,
+        updateNutritionTag: adminUpdateNutritionTag,
+        deleteNutritionTag: adminDeleteNutritionTag,
         updateOrderStatus: adminUpdateOrderStatus,
         refreshData: async () => {
           await adminRefresh();
           await adminFetchRecipes();
+          await adminFetchNutritionTags();
           await adminFetchCoupons();
         },
         addCoupon: adminAddCoupon,

@@ -47,7 +47,7 @@ export const HowItWorks: React.FC = () => {
                 key={step.title}
                 className="rounded-[2.5rem] bg-white border border-gray-100 p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group"
               >
-                <div className="w-14 h-14 rounded-2xl bg-olive-50 text-olive-800 flex items-center justify-center mb-6 group-hover:bg-gold-500 group-hover:text-white transition-colors">
+                <div className="w-14 h-14 rounded-2xl bg-[#026255]/10 text-[#026255] flex items-center justify-center mb-6 group-hover:bg-[#ff7733] group-hover:text-white transition-colors">
                   <Icon className="w-7 h-7" />
                 </div>
                 <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">

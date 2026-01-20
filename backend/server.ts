@@ -168,6 +168,15 @@ const RecipeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+const NutritionTagSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    key: { type: String, required: true, unique: true },
+    active: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
 const CouponSchema = new mongoose.Schema(
   {
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },
@@ -183,6 +192,7 @@ const Order = mongoose.model('Order', OrderSchema);
 const Recipe = mongoose.model('Recipe', RecipeSchema);
 const User = mongoose.model('User', UserSchema);
 const Coupon = mongoose.model('Coupon', CouponSchema);
+const NutritionTag = mongoose.model('NutritionTag', NutritionTagSchema);
 
 const PLANS = [
   { id: 'plan_5', price: 66, mealLimit: 5, extraPrice: 12.9 },
@@ -563,6 +573,16 @@ app.get('/api/recipes', async (_, res) => {
   }
 });
 
+// Public: Get Nutrition Tags
+app.get('/api/nutrition-tags', async (_, res) => {
+  try {
+    const tags = await NutritionTag.find({ active: true }).sort('name');
+    res.json(tags);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch nutrition tags' });
+  }
+});
+
 app.get('/api/recipes/:id', async (req, res) => {
   try {
     const recipe = await Recipe.findOne({
@@ -783,6 +803,57 @@ app.delete('/api/admin/recipes/:id', adminOnly, async (req, res) => {
     { new: true }
   );
   res.json(recipe);
+});
+
+// Admin: Nutrition Tags (CRUD)
+app.get('/api/admin/nutrition-tags', adminOnly, async (_req, res) => {
+  const tags = await NutritionTag.find({}).sort('name');
+  res.json(tags);
+});
+
+app.post('/api/admin/nutrition-tags', adminOnly, async (req, res) => {
+  const name = String(req.body?.name || '').trim();
+  if (!name) {
+    return res.status(400).json({ error: 'Tag name is required' });
+  }
+  const key = name.toLowerCase();
+  const existing = await NutritionTag.findOne({ key });
+  if (existing) {
+    return res.status(400).json({ error: 'Tag already exists' });
+  }
+  const created = await NutritionTag.create({
+    name,
+    key,
+    active: req.body?.active ?? true,
+  });
+  return res.status(201).json(created);
+});
+
+app.patch('/api/admin/nutrition-tags/:id', adminOnly, async (req, res) => {
+  const updates: any = {};
+  if (req.body?.name !== undefined) {
+    const name = String(req.body.name || '').trim();
+    if (!name) {
+      return res.status(400).json({ error: 'Tag name is required' });
+    }
+    const key = name.toLowerCase();
+    const existing = await NutritionTag.findOne({ key, _id: { $ne: req.params.id } });
+    if (existing) {
+      return res.status(400).json({ error: 'Tag already exists' });
+    }
+    updates.name = name;
+    updates.key = key;
+  }
+  if (req.body?.active !== undefined) {
+    updates.active = Boolean(req.body.active);
+  }
+  const updated = await NutritionTag.findByIdAndUpdate(req.params.id, updates, { new: true });
+  return res.json(updated);
+});
+
+app.delete('/api/admin/nutrition-tags/:id', adminOnly, async (req, res) => {
+  await NutritionTag.findByIdAndDelete(req.params.id);
+  return res.json({ ok: true });
 });
 
 // Admin: Users (pagination + search)

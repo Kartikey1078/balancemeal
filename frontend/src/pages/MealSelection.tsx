@@ -12,8 +12,9 @@ const MealCard = React.lazy(() => import('../components/meals/MealCard').then(mo
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const MealSelection: React.FC = () => {
-  const { cart, updateMealQuantity, addMealToCart, pricing } = useApp();
+  const { cart, updateMealQuantity, addMealToCart, pricing, nutritionTags } = useApp();
   const [filter, setFilter] = useState<'all' | 'veg' | 'non-veg'>('all');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [baseSelections, setBaseSelections] = useState<Record<string, string>>({});
   const [weekMeals, setWeekMeals] = useState<Meal[]>([]);
   const [mealsLoading, setMealsLoading] = useState(true);
@@ -51,8 +52,13 @@ export const MealSelection: React.FC = () => {
   const filteredMeals = weekMeals.filter((meal) => {
     const week = meal.week ?? 1;
     if (week !== activeWeek) return false;
-    if (filter === 'veg') return meal.isVeg;
-    if (filter === 'non-veg') return !meal.isVeg;
+    const matchesDiet =
+      filter === 'all' ? true : filter === 'veg' ? meal.isVeg : !meal.isVeg;
+    if (!matchesDiet) return false;
+    if (selectedTags.length > 0) {
+      const tags = meal.tags || [];
+      if (!selectedTags.some((tag) => tags.includes(tag))) return false;
+    }
     return true;
   });
 
@@ -74,6 +80,7 @@ export const MealSelection: React.FC = () => {
               Week {activeWeek} menu
             </p>
           </div>
+        <div className="flex flex-col items-center gap-4 w-full">
           <div className="flex bg-white p-2 rounded-3xl border border-gray-100 shadow-xl overflow-x-auto no-scrollbar">
             {(['all', 'veg', 'non-veg'] as const).map(f => (
               <button
@@ -87,6 +94,32 @@ export const MealSelection: React.FC = () => {
               </button>
             ))}
           </div>
+          {nutritionTags.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {nutritionTags.map((tag) => {
+                const selected = selectedTags.includes(tag.name);
+                return (
+                  <button
+                    key={tag._id || tag.name}
+                    type="button"
+                    onClick={() =>
+                      setSelectedTags((prev) =>
+                        selected ? prev.filter((t) => t !== tag.name) : [...prev, tag.name]
+                      )
+                    }
+                    className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
+                      selected
+                        ? 'bg-[#026255] text-white border-[#026255] shadow-lg'
+                        : 'bg-white text-gray-500 border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tag.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-10">

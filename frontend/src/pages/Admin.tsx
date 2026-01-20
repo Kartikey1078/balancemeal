@@ -57,17 +57,7 @@ const StatCard = ({
 );
 
 export const AdminDashboard: React.FC = () => {
-  const TAG_OPTIONS = [
-    "Gluten Free",
-    "Vegan",
-    "High Protein",
-    "Balanced Meal",
-    "Low Carb",
-    "Keto Friendly",
-    "Dairy Free",
-  ];
-
-  const { adminData, adminLogout, adminMealsLoading, adminRecipesLoading } = useApp();
+  const { adminData, adminLogout, adminMealsLoading, adminRecipesLoading, nutritionTags } = useApp();
   const ORDER_STATUS_FLOW: OrderStatus[] = [
     OrderStatus.PLACED,
     OrderStatus.RECEIVED,
@@ -118,6 +108,10 @@ export const AdminDashboard: React.FC = () => {
   });
   const [couponError, setCouponError] = useState("");
   const [recipeError, setRecipeError] = useState("");
+  const [mealTagError, setMealTagError] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [tagError, setTagError] = useState("");
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
 
   useEffect(() => {
     adminData.refreshData();
@@ -220,6 +214,11 @@ export const AdminDashboard: React.FC = () => {
     return adminData.recipes;
   }, [adminData.recipes]);
 
+  const activeNutritionTags = useMemo(
+    () => nutritionTags.map((tag) => tag.name),
+    [nutritionTags]
+  );
+
   const dashboardStats = useMemo(() => {
     const orders = adminData.allOrders || [];
     const totalRevenue = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
@@ -278,6 +277,10 @@ export const AdminDashboard: React.FC = () => {
 
   const handleAddMeal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (activeNutritionTags.length > 0 && (!newMeal.tags || newMeal.tags.length === 0)) {
+      setMealTagError("Select at least one nutrition tag for this meal.");
+      return;
+    }
     if (editingMeal) {
       await adminData.updateMeal(editingMeal._id!, newMeal, imageFile || undefined);
     } else {
@@ -954,19 +957,22 @@ export const AdminDashboard: React.FC = () => {
                   </label>
 
                   <div className="flex flex-wrap gap-3">
-                    {TAG_OPTIONS.map((tag) => {
+                    {activeNutritionTags.map((tag) => {
                       const selected = newMeal.tags?.includes(tag);
                       return (
                         <button
                           key={tag}
                           type="button"
                           onClick={() =>
-                            setNewMeal((prev) => ({
-                              ...prev,
-                              tags: selected
-                                ? prev.tags?.filter((t) => t !== tag)
-                                : [...(prev.tags || []), tag],
-                            }))
+                            setNewMeal((prev) => {
+                              setMealTagError("");
+                              return {
+                                ...prev,
+                                tags: selected
+                                  ? prev.tags?.filter((t) => t !== tag)
+                                  : [...(prev.tags || []), tag],
+                              };
+                            })
                           }
                           className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-wide border transition-all ${
                             selected
@@ -978,6 +984,109 @@ export const AdminDashboard: React.FC = () => {
                         </button>
                       );
                     })}
+                  </div>
+                  {mealTagError && (
+                    <div className="mt-3 text-xs font-black text-rose-400">{mealTagError}</div>
+                  )}
+                  {activeNutritionTags.length === 0 && (
+                    <div className="mt-3 text-xs font-black text-amber-400">
+                      No active nutrition tags yet. Create one below.
+                    </div>
+                  )}
+                  <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Manage Tags
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Create, rename, enable or delete nutrition tags.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <input
+                          value={tagInput}
+                          onChange={(e) => {
+                            setTagInput(e.target.value);
+                            setTagError("");
+                          }}
+                          placeholder="e.g. High Protein"
+                          className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs font-bold text-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const name = tagInput.trim();
+                            if (!name) {
+                              setTagError("Tag name is required.");
+                              return;
+                            }
+                            if (editingTagId) {
+                              const result = await adminData.updateNutritionTag(editingTagId, { name });
+                              if (!result.ok) {
+                                setTagError(result.error || "Failed to update tag.");
+                                return;
+                              }
+                            } else {
+                              const result = await adminData.createNutritionTag(name);
+                              if (!result.ok) {
+                                setTagError(result.error || "Failed to create tag.");
+                                return;
+                              }
+                            }
+                            setTagInput("");
+                            setEditingTagId(null);
+                          }}
+                          className="px-4 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-gold-500 text-black"
+                        >
+                          {editingTagId ? "Update" : "Add"}
+                        </button>
+                      </div>
+                    </div>
+                    {tagError && (
+                      <div className="mt-3 text-xs font-black text-rose-400">{tagError}</div>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {adminData.nutritionTags.map((tag) => (
+                        <div
+                          key={tag._id || tag.name}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                            tag.active
+                              ? "bg-white/10 text-white border-white/10"
+                              : "bg-white/5 text-gray-500 border-white/5"
+                          }`}
+                        >
+                          <span>{tag.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTagInput(tag.name);
+                              setEditingTagId(tag._id || null);
+                            }}
+                            className="text-gray-300 hover:text-white"
+                            title="Edit"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => adminData.updateNutritionTag(tag._id!, { active: !tag.active })}
+                            className={tag.active ? "text-emerald-400" : "text-gray-400"}
+                            title={tag.active ? "Disable" : "Enable"}
+                          >
+                            <CheckCircle2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => adminData.deleteNutritionTag(tag._id!)}
+                            className="text-rose-400 hover:text-rose-300"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -1332,7 +1441,7 @@ export const AdminDashboard: React.FC = () => {
                     Tags
                   </label>
                   <div className="flex flex-wrap gap-3">
-                    {TAG_OPTIONS.map((tag) => {
+                    {activeNutritionTags.map((tag) => {
                       const selected = newRecipe.tags?.includes(tag);
                       return (
                         <button

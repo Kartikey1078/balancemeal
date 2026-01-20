@@ -32,7 +32,7 @@ export const Testimonials: React.FC = () => {
               Real stories from people building healthier routines with Balanced Meal.
             </p>
           </div>
-          <button className="inline-flex items-center gap-2 px-6 py-4 rounded-2xl border border-gray-100 text-olive-800 font-black text-xs uppercase tracking-widest hover:bg-olive-50 hover:-translate-y-0.5 transition-all">
+          <button className="inline-flex items-center gap-2 px-6 py-4 rounded-2xl border border-[#026255]/20 text-[#026255] font-black text-xs uppercase tracking-widest hover:bg-[#026255]/5 hover:-translate-y-0.5 transition-all">
             Write Us a Review <PenLine className="w-4 h-4" />
           </button>
         </div>

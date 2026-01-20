@@ -157,31 +157,31 @@ export const Home: React.FC = () => {
       <section className="relative pt-40 pb-32 overflow-hidden">
         {/* Background Elements */}
         <div className="absolute top-0 left-0 w-full h-[120%] -z-10 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-gold-400/5 blur-[120px] rounded-full"></div>
-          <div className="absolute bottom-0 left-[-5%] w-[40%] h-[40%] bg-olive-800/5 blur-[120px] rounded-full"></div>
+          <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[60%] bg-[#ff7733]/15 blur-[140px] rounded-full"></div>
+          <div className="absolute bottom-0 left-[-5%] w-[40%] h-[40%] bg-[#026255]/15 blur-[140px] rounded-full"></div>
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
             <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-5 py-2 bg-olive-50 text-olive-800 rounded-full text-xs font-black uppercase tracking-[0.2em] mb-10 shadow-sm">
-                <Sparkles className="w-4 h-4 text-gold-500" />
+              <div className="inline-flex items-center gap-2 px-5 py-2 bg-[#026255]/10 text-[#026255] rounded-full text-xs font-black uppercase tracking-[0.2em] mb-10 shadow-sm">
+                <Sparkles className="w-4 h-4 text-[#ff7733]" />
                 The Future of Fine Nutrition
               </div>
               <h1 className="text-6xl lg:text-8xl font-black leading-[1.05] mb-10 text-olive-800 tracking-tighter">
                 Gourmet health. <br />
-                <span className="text-gold-500 underline decoration-olive-800/10 underline-offset-[10px]">Zero friction.</span>
+                <span className="text-[#ff7733] underline decoration-[#026255]/20 underline-offset-[10px]">Zero friction.</span>
               </h1>
               <p className="text-xl lg:text-2xl text-gray-500 mb-12 leading-relaxed">
                 Experience chef-curated meals that mirror high-end dining, delivered with the convenience of a modern SaaS.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-5">
-                <Link to="/plans" className="olive-gradient text-white px-10 py-6 rounded-[2rem] font-bold text-xl hover:shadow-[0_20px_40px_rgba(45,58,45,0.25)] transition-all flex items-center justify-center gap-3 group">
+                <Link to="/plans" className="text-white px-10 py-6 rounded-[2rem] font-bold text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_40px_rgba(2,98,85,0.25)] hover:shadow-[0_24px_60px_rgba(2,98,85,0.35)] bg-[linear-gradient(135deg,#026255_0%,#0d8a77_100%)]">
                   Start Your Journey <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link to="/meals" className="bg-white text-olive-800 border-2 border-olive-800/5 px-10 py-6 rounded-[2rem] font-bold text-xl hover:bg-gray-50 transition-all flex items-center justify-center gap-3">
-                  <Play className="w-5 h-5 fill-olive-800" /> Explore Menu
+                <Link to="/meals" className="bg-white text-[#026255] border-2 border-[#026255]/10 px-10 py-6 rounded-[2rem] font-bold text-xl hover:bg-[#026255]/5 transition-all flex items-center justify-center gap-3">
+                  <Play className="w-5 h-5 fill-[#026255]" /> Explore Menu
                 </Link>
               </div>
 
@@ -193,7 +193,7 @@ export const Home: React.FC = () => {
                   <div className="w-14 h-14 rounded-2xl bg-gold-500 border-4 border-white shadow-lg flex items-center justify-center text-white font-bold text-sm">+4k</div>
                 </div>
                 <div>
-                  <div className="flex text-gold-500 mb-1">
+                <div className="flex text-[#ff7733] mb-1">
                     {[1,2,3,4,5].map(s => <Star key={s} className="w-5 h-5 fill-current" />)}
                   </div>
                   <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Trustpilot 4.9/5</p>
@@ -202,7 +202,7 @@ export const Home: React.FC = () => {
             </div>
 
             <div className="relative group">
-              <div className="absolute inset-0 olive-gradient rounded-[4rem] rotate-6 scale-95 opacity-10 group-hover:rotate-3 transition-transform duration-700"></div>
+              <div className="absolute inset-0 rounded-[4rem] rotate-6 scale-95 opacity-10 group-hover:rotate-3 transition-transform duration-700 bg-[linear-gradient(135deg,#026255_0%,#ff7733_100%)]"></div>
               <div className="relative rounded-[4rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.1)] border-8 border-white group-hover:-translate-y-4 transition-transform duration-700">
                 <img 
                   src="https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&q=80&w=1200" 
@@ -214,7 +214,7 @@ export const Home: React.FC = () => {
               
               {/* Floating KPI */}
               <div className="absolute -bottom-10 -left-10 bg-white p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 flex items-center gap-6 animate-float">
-                <div className="w-16 h-16 gold-gradient rounded-2xl flex items-center justify-center text-white shadow-lg shadow-gold-500/30">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#ff7733]/30 bg-[linear-gradient(135deg,#ff7733_0%,#ff9b66_100%)]">
                   <Award className="w-8 h-8" />
                 </div>
                 <div>
