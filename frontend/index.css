@@ -62,3 +62,13 @@ body {
 .leaflet-bottom {
   z-index: 0;
 }
+
+#card-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+#card-container iframe,
+#card-container input {
+  max-width: 100%;
+}

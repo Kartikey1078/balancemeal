@@ -358,8 +358,8 @@ export const Checkout: React.FC = () => {
                   <Lock className="w-4 h-4 text-gray-500" />
                 </div>
                 <div className="p-10 space-y-8">
-                  <div className="p-8 border-2 border-dashed border-gray-100 rounded-3xl">
-                    <div id="card-container" />
+                  <div className="p-8 border-2 border-dashed border-gray-100 rounded-3xl overflow-hidden">
+                    <div id="card-container" className="w-full max-w-full" />
                   </div>
                   {squareError && (
                     <div className="text-sm font-bold text-rose-500">
