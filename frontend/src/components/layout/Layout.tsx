@@ -303,7 +303,7 @@ export const Footer: React.FC = () => {
         </div>
         
         <div className="pt-12 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-sm font-medium text-gray-400 italic">© 2024 VitalEats Inc. A new standard for fine healthy dining.</p>
+          <p className="text-sm font-medium text-gray-400 italic">© 2024 BalancedMeal Inc. A new standard for fine healthy dining.</p>
           <div className="flex gap-10 text-xs font-bold uppercase tracking-widest text-gray-300">
             <a href="#" className="hover:text-gold-500 transition-colors">Privacy</a>
             <a href="#" className="hover:text-gold-500 transition-colors">Terms</a>
