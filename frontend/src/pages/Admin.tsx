@@ -1997,7 +1997,7 @@ export const AdminDashboard: React.FC = () => {
             <Activity />
           </div>
           <span className="text-2xl font-black tracking-tighter">
-            Vital<span className="text-gold-500">Console</span>
+            Balanced<span className="text-gold-500">Meal</span>
           </span>
         </div>
         <nav className="flex-1 px-6 space-y-2">

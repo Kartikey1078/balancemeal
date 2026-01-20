@@ -41,7 +41,7 @@ export const Header: React.FC = () => {
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-20 h-12 sm:w-24 sm:h-14 flex items-center justify-center overflow-hidden">
               <img
-                src="/logo/balanceMeal.png"
+                src="/logo/BalancedMealLogo.png"
                 alt="BalancedMeal"
                 className="w-20 h-12 sm:w-24 sm:h-14 object-contain"
               />
@@ -120,7 +120,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-3">
             <div className="w-20 h-12 flex items-center justify-center overflow-hidden">
               <img
-                src="/logo/balanceMeal.png"
+                src="/logo/BalancedMealLogo.png"
                 alt="BalancedMeal"
                 className="w-20 h-12 object-contain"
               />
@@ -236,7 +236,7 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-3 mb-8">
               <div className="w-20 h-12 rounded-2xl flex items-center justify-center overflow-hidden">
                 <img
-                  src="/logo/balanceMeal.png"
+                  src="/logo/BalancedMealLogo.png"
                   alt="BalancedMeal"
                   className="w-20 h-12 object-contain"
                 />
