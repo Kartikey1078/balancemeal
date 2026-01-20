@@ -406,7 +406,7 @@ export const Checkout: React.FC = () => {
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
                   Apply Coupon
                 </label>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     value={couponCode}
@@ -424,7 +424,7 @@ export const Checkout: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleApplyCoupon}
-                    className="px-6 py-4 bg-olive-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gold-500 transition-colors"
+                    className="w-full sm:w-auto px-6 py-4 bg-olive-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-gold-500 transition-colors"
                   >
                     Apply
                   </button>
@@ -441,7 +441,7 @@ export const Checkout: React.FC = () => {
               <div className="mb-12">
                 <div className="flex justify-between items-end">
                   <span className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Weekly Commitment</span>
-                  <span className="text-6xl font-black text-olive-800 tracking-tighter">${totalAfterDiscount.toFixed(2)}</span>
+                  <span className="text-4xl sm:text-5xl font-black text-olive-800 tracking-tighter">${totalAfterDiscount.toFixed(2)}</span>
                 </div>
               </div>
               <button
