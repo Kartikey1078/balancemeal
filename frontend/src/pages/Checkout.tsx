@@ -376,8 +376,15 @@ export const Checkout: React.FC = () => {
           </div>
 
           <div className="lg:col-span-5">
-            <div className="bg-white p-12 rounded-[3.5rem] border border-gray-100 shadow-2xl sticky top-40">
-              <h3 className="text-2xl font-black text-olive-800 tracking-tight mb-10">Vault Summary</h3>
+            <div className="bg-white rounded-[3.5rem] border border-gray-100 shadow-2xl sticky top-40 overflow-hidden">
+              <div className="bg-charcoal text-white px-10 py-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-gold-500" />
+                  <span className="text-xs font-black uppercase tracking-widest">Vault Summary</span>
+                </div>
+                <ShieldCheck className="w-4 h-4 text-gray-500" />
+              </div>
+              <div className="p-10">
               <div className="space-y-6 mb-12 pb-12 border-b border-gray-100">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400 font-bold text-sm uppercase tracking-widest">Base Subscription</span>
@@ -458,6 +465,7 @@ export const Checkout: React.FC = () => {
               <p className="text-center mt-6 text-[10px] font-black text-gray-300 uppercase tracking-widest flex items-center justify-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" /> High-Encryption Connection Secure
               </p>
+              </div>
             </div>
           </div>
         </div>
