@@ -44,6 +44,11 @@ export const Checkout: React.FC = () => {
     let initDone = false;
     const appId = import.meta.env.VITE_SQUARE_APP_ID as string | undefined;
     const locationId = import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined;
+    const squareEnv = (import.meta.env.VITE_SQUARE_ENV || 'sandbox').toLowerCase();
+    const squareScriptSrc =
+      squareEnv === 'production'
+        ? 'https://web.squarecdn.com/v1/square.js'
+        : 'https://sandbox.web.squarecdn.com/v1/square.js';
     if (!appId || !locationId) {
       setSquareError('Square is not configured');
       return;
@@ -55,7 +60,7 @@ export const Checkout: React.FC = () => {
         initInFlight = true;
         if (!('Square' in window)) {
           const existingScript = document.querySelector<HTMLScriptElement>(
-            'script[src="https://sandbox.web.squarecdn.com/v1/square.js"]'
+            `script[src="${squareScriptSrc}"]`
           );
           const loadScript = () =>
             new Promise<void>((resolve, reject) => {
@@ -65,7 +70,7 @@ export const Checkout: React.FC = () => {
               }
               if (!existingScript) {
                 const script = document.createElement('script');
-                script.src = 'https://sandbox.web.squarecdn.com/v1/square.js';
+                script.src = squareScriptSrc;
                 script.async = true;
                 script.onload = () => {
                   script.dataset.loaded = 'true';

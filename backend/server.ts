@@ -49,9 +49,10 @@ const JWT_SECRET = process.env.JWT_SECRET
 /* ======================
    SQUARE CLIENT
 ====================== */
+const squareEnv = String(process.env.SQUARE_ENV || 'sandbox').toLowerCase();
 const squareClient = new Client({
   accessToken: process.env.SQUARE_ACCESS_TOKEN!,
-  environment: Environment.Sandbox, // or Production
+  environment: squareEnv === 'production' ? Environment.Production : Environment.Sandbox,
 });
 
 
