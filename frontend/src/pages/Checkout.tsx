@@ -430,7 +430,7 @@ export const Checkout: React.FC = () => {
                       }
                       if (couponError) setCouponError('');
                     }}
-                    placeholder="VITAL10"
+                    placeholder="BALANCED10"
                     className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold focus:outline-none"
                   />
                   <button
