@@ -316,7 +316,7 @@ export const Checkout: React.FC = () => {
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Communications (Email)</label>
-                  <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 font-bold focus:outline-none" placeholder="name@vital.com" />
+                  <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 font-bold focus:outline-none" placeholder="name@balanced.com" />
                 </div>
                 <div className="col-span-2 md:col-span-1">
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Direct Line (Phone)</label>
