@@ -1868,7 +1868,7 @@ export const AdminDashboard: React.FC = () => {
             <input
               value={couponForm.code}
               onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value })}
-              placeholder="VITAL25"
+              placeholder="BALANCED25"
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-black uppercase tracking-widest text-white focus:outline-none"
             />
           </div>
