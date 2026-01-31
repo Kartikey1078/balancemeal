@@ -44,11 +44,11 @@ export const Checkout: React.FC = () => {
     let initDone = false;
     const appId = import.meta.env.VITE_SQUARE_APP_ID as string | undefined;
     const locationId = import.meta.env.VITE_SQUARE_LOCATION_ID as string | undefined;
-    const squareEnv = (import.meta.env.VITE_SQUARE_ENV || 'sandbox').toLowerCase();
+    const squareEnv = 'sandbox';
     const squareScriptSrc =
-      squareEnv === 'production'
-        ? 'https://web.squarecdn.com/v1/square.js'
-        : 'https://sandbox.web.squarecdn.com/v1/square.js';
+      // Production script disabled for sandbox-only setup.
+      // 'https://web.squarecdn.com/v1/square.js'
+      'https://sandbox.web.squarecdn.com/v1/square.js';
     if (!appId || !locationId) {
       setSquareError('Square is not configured');
       return;
