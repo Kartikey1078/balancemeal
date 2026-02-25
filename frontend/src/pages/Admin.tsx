@@ -2767,8 +2767,8 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0C0C0C] flex text-white font-sans">
-      <aside className="w-80 bg-[#0C0C0C] border-r border-white/5 flex flex-col sticky top-0 h-screen py-10 shrink-0">
-        <div className="px-10 mb-16 flex items-center gap-3">
+      <aside className="w-80 bg-[#0C0C0C] border-r border-white/5 flex flex-col sticky top-0 h-screen py-10 shrink-0 min-h-0">
+        <div className="px-10 mb-16 flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 gold-gradient rounded-xl flex items-center justify-center text-white">
             <Activity />
           </div>
@@ -2776,7 +2776,7 @@ export const AdminDashboard: React.FC = () => {
             Balanced<span className="text-gold-500">Meal</span>
           </span>
         </div>
-        <nav className="flex-1 px-6 space-y-2">
+        <nav className="flex-1 px-6 space-y-2 overflow-y-auto min-h-0 overscroll-contain [scrollbar-width:thin] [scrollbar-color:#C5A059_rgba(255,255,255,0.06)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/[0.06] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gold-500 [&::-webkit-scrollbar-thumb]:hover:bg-gold-400">
           {[
             { id: "dashboard", icon: LayoutDashboard, label: "Overview" },
             { id: "meals", icon: Utensils, label: "Catalog" },
@@ -2806,7 +2806,7 @@ export const AdminDashboard: React.FC = () => {
             </button>
           ))}
         </nav>
-        <div className="px-6 pt-10 border-t border-white/5">
+        <div className="px-6 pt-10 border-t border-white/5 shrink-0">
           <button
             onClick={adminLogout}
             className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-black text-sm text-rose-500 hover:bg-rose-500/10"
@@ -2816,7 +2816,7 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-16 overflow-y-auto">
+      <main className="flex-1 p-16 overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#C5A059_rgba(255,255,255,0.06)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/[0.06] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gold-500 [&::-webkit-scrollbar-thumb]:hover:bg-gold-400">
         <header className="flex justify-between items-end mb-16">
           <div>
             <h2 className="text-xs font-black text-gray-600 uppercase tracking-widest mb-3">
