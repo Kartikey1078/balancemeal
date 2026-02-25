@@ -1139,7 +1139,7 @@ export const AdminDashboard: React.FC = () => {
           <select
             value={orderReportDay}
             onChange={(e) => setOrderReportDay(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+            className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
           >
             <option value="all">All Days</option>
             {slides.map((slide) => (
@@ -1156,7 +1156,7 @@ export const AdminDashboard: React.FC = () => {
               type="date"
               value={orderReportFrom}
               onChange={(e) => setOrderReportFrom(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -1167,7 +1167,7 @@ export const AdminDashboard: React.FC = () => {
               type="date"
               value={orderReportTo}
               onChange={(e) => setOrderReportTo(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
             />
           </div>
         </div>
@@ -1204,7 +1204,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) =>
                 setSelectedWeek(Number(e.target.value))
               }
-              className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
             >
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((week) => (
                 <option key={week} value={week}>
@@ -1223,7 +1223,7 @@ export const AdminDashboard: React.FC = () => {
                 setMealsPageSize(Number(e.target.value));
                 setMealsPage(1);
               }}
-              className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
             >
               {[6, 9, 12].map((size) => (
                 <option key={size} value={size}>
@@ -1375,7 +1375,7 @@ export const AdminDashboard: React.FC = () => {
                     onChange={(e) =>
                       setNewMeal({ ...newMeal, name: e.target.value })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div className="col-span-2 flex items-center gap-3">
@@ -1404,7 +1404,7 @@ export const AdminDashboard: React.FC = () => {
                         week: e.target.value === "" ? undefined : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   >
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((week) => (
                       <option key={week} value={week}>
@@ -1427,7 +1427,7 @@ export const AdminDashboard: React.FC = () => {
                         calories: e.target.value === "" ? undefined : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1444,7 +1444,7 @@ export const AdminDashboard: React.FC = () => {
                         protein: e.target.value === "" ? undefined : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1461,7 +1461,7 @@ export const AdminDashboard: React.FC = () => {
                         fat: e.target.value === "" ? undefined : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1478,7 +1478,7 @@ export const AdminDashboard: React.FC = () => {
                         carbs: e.target.value === "" ? undefined : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div className="col-span-2">
@@ -1730,7 +1730,7 @@ export const AdminDashboard: React.FC = () => {
                 setRecipesPageSize(Number(e.target.value));
                 setRecipesPage(1);
               }}
-              className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
             >
               {[6, 9, 12].map((size) => (
                 <option key={size} value={size}>
@@ -1876,7 +1876,7 @@ export const AdminDashboard: React.FC = () => {
                     onChange={(e) =>
                       setNewRecipe({ ...newRecipe, title: e.target.value })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1888,7 +1888,7 @@ export const AdminDashboard: React.FC = () => {
                     onChange={(e) =>
                       setNewRecipe({ ...newRecipe, category: e.target.value })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   >
                     {["Breakfast", "Lunch", "Dinner", "Snack"].map((cat) => (
                       <option key={cat} value={cat}>
@@ -1906,7 +1906,7 @@ export const AdminDashboard: React.FC = () => {
                     onChange={(e) =>
                       setNewRecipe({ ...newRecipe, difficulty: e.target.value })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   >
                     {["Easy", "Medium", "Hard"].map((level) => (
                       <option key={level} value={level}>
@@ -1929,7 +1929,7 @@ export const AdminDashboard: React.FC = () => {
                         prepTime: Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1946,7 +1946,7 @@ export const AdminDashboard: React.FC = () => {
                         cookTime: Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div>
@@ -1963,7 +1963,7 @@ export const AdminDashboard: React.FC = () => {
                         servings: Number(e.target.value),
                       })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   />
                 </div>
                 <div className="col-span-2">
@@ -2164,7 +2164,7 @@ export const AdminDashboard: React.FC = () => {
                     onChange={(e) =>
                       setNewRecipe({ ...newRecipe, status: e.target.value as "Draft" | "Published" })
                     }
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
+                    className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-6 py-5 text-white focus:outline-none"
                   >
                     {["Draft", "Published"].map((status) => (
                       <option key={status} value={status}>
@@ -2214,7 +2214,7 @@ export const AdminDashboard: React.FC = () => {
               setUserPage(1);
             }}
             placeholder="Search name or email"
-            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+            className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
           />
           <select
             value={userRoleFilter}
@@ -2222,7 +2222,7 @@ export const AdminDashboard: React.FC = () => {
               setUserRoleFilter(e.target.value);
               setUserPage(1);
             }}
-            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+            className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
           >
             <option value="">All Roles</option>
             <option value="USER">User</option>
@@ -2234,7 +2234,7 @@ export const AdminDashboard: React.FC = () => {
               setUserOrderFilter(e.target.value);
               setUserPage(1);
             }}
-            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+            className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
           >
             <option value="">All Users</option>
             <option value="true">With Orders</option>
@@ -2246,7 +2246,7 @@ export const AdminDashboard: React.FC = () => {
               setUserPageSize(Number(e.target.value));
               setUserPage(1);
             }}
-            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
+            className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
           >
             {[10, 20, 50].map((size) => (
               <option key={size} value={size}>
@@ -2450,7 +2450,7 @@ export const AdminDashboard: React.FC = () => {
               onChange={(e) =>
                 setCouponForm({ ...couponForm, type: e.target.value as "percent" | "amount" })
               }
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select w-full bg-white/10 border border-white/10 rounded-2xl px-4 py-4 text-sm font-black uppercase tracking-widest text-white focus:outline-none"
             >
               <option value="percent">Percent</option>
               <option value="amount">Amount</option>
@@ -2720,7 +2720,7 @@ export const AdminDashboard: React.FC = () => {
           <select
             value={kitchenReportDay}
             onChange={(e) => setKitchenReportDay(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+            className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
           >
             <option value="all">All Days</option>
             <option value="sunday">Sunday</option>
@@ -2734,7 +2734,7 @@ export const AdminDashboard: React.FC = () => {
               type="date"
               value={kitchenReportFrom}
               onChange={(e) => setKitchenReportFrom(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -2745,7 +2745,7 @@ export const AdminDashboard: React.FC = () => {
               type="date"
               value={kitchenReportTo}
               onChange={(e) => setKitchenReportTo(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+              className="admin-select bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
             />
           </div>
         </div>

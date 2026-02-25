@@ -72,3 +72,9 @@ body {
 #card-container input {
   max-width: 100%;
 }
+
+/* Admin dropdowns: transparent white bg + white text (trigger + options) */
+.admin-select option {
+  background: #1a1a1a;
+  color: #fff;
+}
