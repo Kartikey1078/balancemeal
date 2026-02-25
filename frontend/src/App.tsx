@@ -15,6 +15,9 @@ import { AdminLogin } from './pages/AdminLogin';
 import { Recipes } from './pages/Recipes';
 import { RecipeDetail } from './pages/RecipeDetail';
 import { ResetPassword } from './pages/ResetPassword';
+import { VerifyEmail } from './pages/VerifyEmail';
+import { ChangePassword } from './pages/ChangePassword';
+import { MasterRecipe } from './pages/MasterRecipe';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -170,6 +173,16 @@ const AppRoutes = () => {
       
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route
+        path="/change-password"
+        element={
+          <ProtectedRoute>
+            <ChangePassword />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/master-recipe" element={<Layout><MasterRecipe /></Layout>} />
       <Route path="/admin/login" element={<AdminLogin />} />
       
       {/* Protected Admin Routes */}

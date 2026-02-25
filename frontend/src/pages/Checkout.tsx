@@ -257,7 +257,12 @@ export const Checkout: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: normalized, items: cart, planId: pricing.planUsed?.id }),
+        body: JSON.stringify({
+          code: normalized,
+          items: cart,
+          planId: pricing.planUsed?.id,
+          email: formData.email,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data?.valid) {

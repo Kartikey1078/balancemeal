@@ -1,60 +1,54 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lock, ShieldCheck } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export const ResetPassword: React.FC = () => {
+export const ChangePassword: React.FC = () => {
+  const { user } = useApp();
   const navigate = useNavigate();
-  const params = useMemo(() => new URLSearchParams(window.location.search), []);
-  const token = params.get('token') || '';
-  const emailFromUrl = params.get('email') || '';
-  const [email, setEmail] = useState(emailFromUrl);
-  const [password, setPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleReset = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!token) {
-      setError('Reset link is missing or invalid.');
+    if (newPassword.length < 8) {
+      setError('New password must be at least 8 characters.');
       return;
     }
-    if (!email) {
-      setError('Email is required.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
-    if (password !== confirm) {
-      setError('Passwords do not match.');
+    if (newPassword !== confirm) {
+      setError('New passwords do not match.');
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      const token = user?.token ?? (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').token; } catch { return null; } })();
+      const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          token: token.trim(),
-          password,
+          currentPassword,
+          newPassword,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
-        setError(data?.error || 'Reset failed. Try again.');
+        setError(data?.error || 'Failed to change password.');
         setLoading(false);
         return;
       }
       setSuccess(true);
     } catch {
-      setError('Reset failed. Try again.');
+      setError('Failed to change password.');
     } finally {
       setLoading(false);
     }
@@ -65,39 +59,38 @@ export const ResetPassword: React.FC = () => {
       <div className="max-w-md w-full bg-white rounded-[2.5rem] border border-gray-100 shadow-2xl p-10">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 olive-gradient rounded-2xl flex items-center justify-center text-white">
-            <ShieldCheck className="w-6 h-6" />
+            <Lock className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-black text-olive-800 tracking-tight">Reset Password</h1>
+          <h1 className="text-2xl font-black text-olive-800 tracking-tight">Change Password</h1>
         </div>
-        <p className="text-sm text-gray-500 mb-8">
-          Enter your email and choose a new password.
-        </p>
 
         {success ? (
-          <div className="text-center space-y-6">
-            <p className="text-sm font-bold text-emerald-600">
-              Password updated successfully.
-            </p>
+          <div className="space-y-6">
+            <p className="text-sm font-bold text-emerald-600">Password updated successfully.</p>
             <button
-              onClick={() => navigate('/login')}
+              onClick={() => navigate(-1)}
               className="w-full olive-gradient text-white py-4 rounded-2xl font-black"
             >
-              Back to Sign In
+              Back
             </button>
           </div>
         ) : (
-          <form onSubmit={handleReset} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-                Email
+                Current Password
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold focus:outline-none"
-                placeholder="name@BalancedMeal.com"
-              />
+              <div className="relative">
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
@@ -107,16 +100,18 @@ export const ResetPassword: React.FC = () => {
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
                 <input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold focus:outline-none"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold focus:outline-none focus:ring-2 focus:ring-gold-500"
                   placeholder="••••••••"
                 />
               </div>
             </div>
             <div>
               <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-                Confirm Password
+                Confirm New Password
               </label>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
@@ -124,7 +119,8 @@ export const ResetPassword: React.FC = () => {
                   type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold focus:outline-none"
+                  required
+                  className="w-full pl-12 pr-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 font-bold focus:outline-none focus:ring-2 focus:ring-gold-500"
                   placeholder="••••••••"
                 />
               </div>
@@ -135,7 +131,7 @@ export const ResetPassword: React.FC = () => {
               disabled={loading}
               className="w-full olive-gradient text-white py-4 rounded-2xl font-black disabled:opacity-50"
             >
-              {loading ? 'Resetting...' : 'Reset Password'}
+              {loading ? 'Updating...' : 'Update Password'}
             </button>
           </form>
         )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingBag, LogOut, Menu, X, Leaf, User, ChevronRight, Facebook, Instagram } from 'lucide-react';
+import { ShoppingBag, LogOut, Menu, X, Leaf, User, ChevronRight, Facebook, Instagram, Lock } from 'lucide-react';
 import { useApp } from '../../context/AppContext.tsx';
 import logo from '../../assets/BalancedMealLogo.png';
 
@@ -84,6 +84,13 @@ export const Header: React.FC = () => {
                   <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Account</p>
                   <p className="text-sm font-bold text-olive-800">{user?.name.split(' ')[0]}</p>
                 </div>
+                <Link
+                  to="/change-password"
+                  className="p-2.5 text-gray-400 hover:text-gold-500 hover:bg-gray-50 rounded-xl transition-all"
+                  title="Change password"
+                >
+                  <Lock className="w-5 h-5" />
+                </Link>
                 <button 
                   onClick={() => logout()} 
                   className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
@@ -195,7 +202,14 @@ export const Header: React.FC = () => {
               </div>
 
               {isLoggedIn && (
-                <div className="px-6 pb-6">
+                <div className="px-6 pb-6 space-y-3">
+                  <Link
+                    to="/change-password"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 text-olive-800 font-black text-sm uppercase tracking-widest hover:bg-gray-200 transition-colors"
+                  >
+                    <Lock className="w-4 h-4" /> Change Password
+                  </Link>
                   <button
                     onClick={() => logout()}
                     className="w-full px-6 py-4 rounded-2xl border border-red-200 text-red-500 font-black text-sm uppercase tracking-widest hover:bg-red-50 transition-colors"

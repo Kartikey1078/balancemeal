@@ -8,6 +8,7 @@ import {
   DollarSign,
   Activity,
   CheckCircle2,
+  FileDown,
   Plus,
   MoreVertical,
   Search,
@@ -23,7 +24,23 @@ import {
   Upload,
 } from "lucide-react";
 import { useApp } from "../context/AppContext.tsx";
-import { OrderStatus, Meal, Recipe, Coupon } from "../types.ts";
+import { KitchenReportTable } from "../components/admin/KitchenReportTable.tsx";
+import { KitchenReportCarousel } from "../components/admin/KitchenReportCarousel";
+import { AdminMasterRecipes } from "../components/admin/AdminMasterRecipes";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { OrderStatus, Meal, Recipe, Coupon, MasterRecipe } from "../types.ts";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  LineChart,
+  Line,
+} from "recharts";
 
 const StatCard = ({
   label,
@@ -65,7 +82,17 @@ export const AdminDashboard: React.FC = () => {
     OrderStatus.OUT_FOR_DELIVERY,
     OrderStatus.DELIVERED,
   ];
-  const [activeTab, setActiveTab] = useState<"dashboard" | "meals" | "orders" | "recipes" | "users" | "coupons">(
+  const [activeTab, setActiveTab] = useState<
+    | "dashboard"
+    | "meals"
+    | "orders"
+    | "recipes"
+    | "users"
+    | "coupons"
+    | "kitchen-report"
+    | "order-report"
+    | "master-recipe"
+  >(
     "dashboard"
   );
   const [showAddMeal, setShowAddMeal] = useState(false);
@@ -87,6 +114,7 @@ export const AdminDashboard: React.FC = () => {
   const [editingMeal, setEditingMeal] = useState<Meal | null>(null);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [expandedReportOrderId, setExpandedReportOrderId] = useState<string | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const [userRoleFilter, setUserRoleFilter] = useState("");
   const [userOrderFilter, setUserOrderFilter] = useState("");
@@ -105,6 +133,9 @@ export const AdminDashboard: React.FC = () => {
     type: "percent" as "percent" | "amount",
     value: "",
     active: true,
+    validFrom: "",
+    validTo: "",
+    maxUsesPerUser: "",
   });
   const [couponError, setCouponError] = useState("");
   const [recipeError, setRecipeError] = useState("");
@@ -112,6 +143,32 @@ export const AdminDashboard: React.FC = () => {
   const [tagInput, setTagInput] = useState("");
   const [tagError, setTagError] = useState("");
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [kitchenReportLoading, setKitchenReportLoading] = useState(false);
+  const [orderReportLoading, setOrderReportLoading] = useState(false);
+  const [kitchenReportDay, setKitchenReportDay] = useState("all");
+  const [kitchenReportFrom, setKitchenReportFrom] = useState("");
+  const [kitchenReportTo, setKitchenReportTo] = useState("");
+  const [orderReportDay, setOrderReportDay] = useState("all");
+  const [orderReportFrom, setOrderReportFrom] = useState("");
+  const [orderReportTo, setOrderReportTo] = useState("");
+  const [orderReportPageByDay, setOrderReportPageByDay] = useState<Record<string, number>>({});
+  const ORDER_REPORT_PAGE_SIZE = 20;
+  const [masterRecipesLoading, setMasterRecipesLoading] = useState(false);
+  const [editingMasterRecipeId, setEditingMasterRecipeId] = useState<string | null>(null);
+  const [viewingMasterRecipe, setViewingMasterRecipe] = useState<MasterRecipe | null>(null);
+  const [viewerDesiredServings, setViewerDesiredServings] = useState(1);
+  const [masterRecipeForm, setMasterRecipeForm] = useState<MasterRecipe>({
+    name: "",
+    baseServings: 4,
+    desiredServings: 4,
+    ingredients: [],
+  });
+  const [ingredientForm, setIngredientForm] = useState({
+    name: "",
+    baseQuantity: "",
+    unit: "",
+  });
+  const [masterRecipeError, setMasterRecipeError] = useState("");
 
   useEffect(() => {
     adminData.refreshData();
@@ -157,6 +214,63 @@ export const AdminDashboard: React.FC = () => {
     };
     load();
   }, [activeTab, userPage, userPageSize, userSearch, userRoleFilter, userOrderFilter]);
+
+  useEffect(() => {
+    if (activeTab !== "kitchen-report") return;
+    let mounted = true;
+    const loadReport = async () => {
+      setKitchenReportLoading(true);
+      const normalized = normalizeSingleDayRange(kitchenReportFrom, kitchenReportTo);
+      await adminData.fetchKitchenReport({
+        day: kitchenReportDay === "all" ? undefined : kitchenReportDay,
+        from: normalized.from || undefined,
+        to: normalized.to || undefined,
+      });
+      if (mounted) {
+        setKitchenReportLoading(false);
+      }
+    };
+    loadReport();
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, kitchenReportDay, kitchenReportFrom, kitchenReportTo]);
+
+  useEffect(() => {
+    if (activeTab !== "order-report") return;
+    let mounted = true;
+    const loadReport = async () => {
+      setOrderReportLoading(true);
+      const normalized = normalizeSingleDayRange(orderReportFrom, orderReportTo);
+      await adminData.fetchOrderReport({
+        from: normalized.from || undefined,
+        to: normalized.to || undefined,
+      });
+      if (mounted) {
+        setOrderReportLoading(false);
+      }
+    };
+    loadReport();
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, orderReportFrom, orderReportTo]);
+
+  useEffect(() => {
+    if (activeTab !== "master-recipe") return;
+    let mounted = true;
+    const loadRecipes = async () => {
+      setMasterRecipesLoading(true);
+      await adminData.fetchMasterRecipes();
+      if (mounted) {
+        setMasterRecipesLoading(false);
+      }
+    };
+    loadRecipes();
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab]);
 
   const emptyMeal: Partial<Meal> = {
     name: "",
@@ -213,6 +327,124 @@ export const AdminDashboard: React.FC = () => {
   const filteredRecipes = useMemo(() => {
     return adminData.recipes;
   }, [adminData.recipes]);
+
+  const topMealsData = useMemo(() => {
+    const totals = new Map<string, number>();
+    adminData.allOrders.forEach((order) => {
+      order.items?.forEach((item) => {
+        const name = item.meal?.name || "Meal";
+        const qty = Number(item.quantity || 0);
+        if (!Number.isFinite(qty) || qty <= 0) return;
+        totals.set(name, (totals.get(name) || 0) + qty);
+      });
+    });
+    return Array.from(totals.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [adminData.allOrders]);
+
+  const orderFrequencyData = useMemo(() => {
+    const counts = new Map<string, number>();
+    adminData.allOrders.forEach((order) => {
+      const dateValue = order.createdAt || order.date;
+      if (!dateValue) return;
+      const date = new Date(dateValue);
+      if (Number.isNaN(date.getTime())) return;
+      const key = date.toISOString().slice(0, 10);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    const days = 14;
+    const result: { date: string; orders: number }[] = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i -= 1) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      result.push({ date: key.slice(5), orders: counts.get(key) || 0 });
+    }
+    return result;
+  }, [adminData.allOrders]);
+
+  const dayGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      Array<{
+        order: any;
+        items: any[];
+        totalQty: number;
+      }>
+    >();
+
+    const addToGroup = (
+      dayKey: string,
+      entry: { order: any; items: any[]; totalQty: number }
+    ) => {
+      if (!groups.has(dayKey)) {
+        groups.set(dayKey, []);
+      }
+      groups.get(dayKey)!.push(entry);
+    };
+
+    adminData.orderReport.forEach((order) => {
+      const items = Array.isArray(order.items) ? order.items : [];
+      const dayToItems = new Map<string, any[]>();
+      const dayToTotal = new Map<string, number>();
+
+      items.forEach((item: any) => {
+        const split = item?.deliverySplit;
+        if (split && typeof split === "object") {
+          Object.entries(split).forEach(([day, qty]) => {
+            const dayQty = Number(qty || 0);
+            if (!Number.isFinite(dayQty) || dayQty <= 0) return;
+            const cloned = { ...item, __dayQuantity: dayQty };
+            if (!dayToItems.has(day)) dayToItems.set(day, []);
+            dayToItems.get(day)!.push(cloned);
+            dayToTotal.set(day, (dayToTotal.get(day) || 0) + dayQty);
+          });
+        }
+      });
+
+      if (dayToItems.size === 0) {
+        const clonedItems = items.map((item: any) => ({
+          ...item,
+          __dayQuantity: Number(item?.quantity || 0),
+        }));
+        const totalQty = clonedItems.reduce(
+          (sum: number, item: any) =>
+            sum + (Number(item?.__dayQuantity || 0) || 0),
+          0
+        );
+        addToGroup("Unsplit", { order, items: clonedItems, totalQty });
+        return;
+      }
+
+      dayToItems.forEach((dayItems, dayKey) => {
+        const totalQty = dayToTotal.get(dayKey) || 0;
+        addToGroup(dayKey, { order, items: dayItems, totalQty });
+      });
+    });
+
+    const ordered = new Map<
+      string,
+      Array<{ order: any; items: any[]; totalQty: number }>
+    >();
+    const dayKeys = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+    dayKeys.forEach((key) => ordered.set(key, groups.get(key)!));
+    if (groups.has("Unsplit")) {
+      const unsplit = groups.get("Unsplit")!;
+      ordered.delete("Unsplit");
+      ordered.set("Unsplit", unsplit);
+    }
+    return ordered;
+  }, [adminData.orderReport]);
+
+  const normalizeSingleDayRange = (from: string, to: string) => {
+    if (from && !to) return { from, to: from };
+    if (to && !from) return { from: to, to };
+    return { from, to };
+  };
 
   const activeNutritionTags = useMemo(
     () => nutritionTags.map((tag) => tag.name),
@@ -415,6 +647,121 @@ export const AdminDashboard: React.FC = () => {
     }));
   };
 
+  const resetMasterRecipeForm = () => {
+    setEditingMasterRecipeId(null);
+    setViewingMasterRecipe(null);
+    setMasterRecipeForm({
+      name: "",
+      baseServings: 4,
+      desiredServings: 4,
+      ingredients: [],
+    });
+    setIngredientForm({ name: "", baseQuantity: "", unit: "" });
+    setMasterRecipeError("");
+  };
+
+  const handleAddMasterIngredient = () => {
+    const name = ingredientForm.name.trim();
+    const unit = ingredientForm.unit.trim();
+    const qty = Number(ingredientForm.baseQuantity);
+    if (!name || !unit || !Number.isFinite(qty) || qty <= 0) {
+      setMasterRecipeError("Enter valid ingredient, quantity, and unit.");
+      return;
+    }
+    setMasterRecipeForm((prev) => ({
+      ...prev,
+      ingredients: [...prev.ingredients, { name, baseQuantity: qty, unit }],
+    }));
+    setIngredientForm({ name: "", baseQuantity: "", unit: "" });
+    setMasterRecipeError("");
+  };
+
+  const handleRemoveMasterIngredient = (idx: number) => {
+    setMasterRecipeForm((prev) => ({
+      ...prev,
+      ingredients: prev.ingredients.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const handleSubmitMasterRecipe = async () => {
+    if (!masterRecipeForm.name.trim()) {
+      setMasterRecipeError("Recipe name is required.");
+      return;
+    }
+    const payload = {
+      name: masterRecipeForm.name.trim(),
+      baseServings: 1,
+      desiredServings: 1,
+      ingredients: masterRecipeForm.ingredients,
+    };
+    const result = editingMasterRecipeId
+      ? await adminData.updateMasterRecipe(editingMasterRecipeId, payload)
+      : await adminData.createMasterRecipe(payload);
+    if (!result.ok) {
+      setMasterRecipeError(result.error || "Failed to save recipe.");
+      return;
+    }
+    resetMasterRecipeForm();
+  };
+
+  const renderOrdersTable = () => (
+    <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
+      <div className="p-8 border-b border-white/5">
+        <h3 className="font-black text-xl text-white tracking-tight">
+          Orders Section
+        </h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-white/5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+              <th className="px-8 py-5">Customer Name</th>
+              <th className="px-8 py-5">Address</th>
+              <th className="px-8 py-5">Card / Payment Details</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {filteredOrders.map((o) => {
+              const addressParts = [
+                o.deliveryDetails?.address,
+                o.deliveryDetails?.city,
+                o.deliveryDetails?.zipCode,
+              ].filter(Boolean);
+              const address = addressParts.length
+                ? addressParts.join(", ")
+                : "-";
+              const paymentDetails = `Amount Paid: $${Number(
+                o.totalPrice || 0
+              ).toFixed(2)}`;
+
+              return (
+                <tr key={o._id || o.id} className="hover:bg-white/[0.02]">
+                  <td className="px-8 py-6">
+                    <div className="font-bold text-white">
+                      {o.customerName || "-"}
+                    </div>
+                    <div className="text-xs text-gray-500">{o.email || "-"}</div>
+                  </td>
+                  <td className="px-8 py-6 text-sm text-gray-300">{address}</td>
+                  <td className="px-8 py-6 text-sm text-gray-300">
+                    {paymentDetails}
+                  </td>
+                </tr>
+              );
+            })}
+            {filteredOrders.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-8 py-8 text-gray-500">
+                  No transactions found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   const renderDashboard = () => (
     <div className="space-y-12 animate-in fade-in duration-700">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -448,184 +795,398 @@ export const AdminDashboard: React.FC = () => {
         />
       </div>
 
-      <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
-        <div className="p-8 border-b border-white/5 flex justify-between items-center">
-          <h3 className="font-black text-xl text-white tracking-tight">
-            Recent Orders
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl p-8">
+          <h3 className="font-black text-xl text-white tracking-tight mb-6">
+            Most Loved Meals
           </h3>
-          <div className="flex items-center gap-3">
-            <select
-              value={orderStatusFilter}
-              onChange={(e) =>
-                setOrderStatusFilter(
-                  e.target.value === "all"
-                    ? "all"
-                    : (e.target.value as OrderStatus)
-                )
-              }
-              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
-            >
-              <option value="all">All Status</option>
-              {ORDER_STATUS_FLOW.map((status) => (
-                <option key={status} value={status}>
-                  {status.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={topMealsData}>
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: "#9CA3AF", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#9CA3AF", fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{ background: "#111", border: "1px solid #222", color: "#fff" }}
+                  labelStyle={{ color: "#fff" }}
+                />
+                <Bar dataKey="total" fill="#C9A227" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-white/5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
-                <th className="px-8 py-5">Recipient</th>
-                <th className="px-8 py-5">Status</th>
-                <th className="px-8 py-5">Total</th>
-                <th className="px-8 py-5 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredOrders.map((o) => {
-                const orderKey = o._id || o.id;
-                const isExpanded = expandedOrderId === orderKey;
-                return (
-                  <React.Fragment key={orderKey}>
-                    <tr
-                      className="hover:bg-white/[0.02] transition-colors cursor-pointer"
-                      onClick={() =>
-                        setExpandedOrderId(isExpanded ? null : orderKey)
-                      }
-                    >
-                      <td className="px-8 py-6">
-                        <div className="font-bold text-white">{o.customerName}</div>
-                        <div className="text-xs text-gray-500">{o.email}</div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <span className="px-4 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          {o.status}
-                        </span>
-                        <div className="mt-3">
-                          <select
-                            value={o.status}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              adminData.updateOrderStatus(
-                                o._id || o.id,
-                                e.target.value as OrderStatus
-                              );
-                            }}
-                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-300 focus:outline-none"
-                          >
-                            {ORDER_STATUS_FLOW.map((status) => (
-                              <option key={status} value={status}>
-                                {status.replace(/_/g, " ")}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 font-black text-white">
-                        ${o.totalPrice.toFixed(2)}
-                      </td>
-                      <td className="px-8 py-6 text-right text-gray-600">
-                        <ChevronRight
-                          className={`w-5 h-5 ml-auto transition-transform ${
-                            isExpanded ? "rotate-90" : ""
-                          }`}
-                        />
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr className="bg-white/[0.02]">
-                        <td colSpan={4} className="px-8 pb-8">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-2">
+
+        <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl p-8">
+          <h3 className="font-black text-xl text-white tracking-tight mb-6">
+            Order Frequency (Last 14 Days)
+          </h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={orderFrequencyData}>
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="date" tick={{ fill: "#9CA3AF", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#9CA3AF", fontSize: 10 }} />
+                <Tooltip
+                  contentStyle={{ background: "#111", border: "1px solid #222", color: "#fff" }}
+                  labelStyle={{ color: "#fff" }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="orders"
+                  stroke="#4F46E5"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+
+  const renderOrders = () => (
+    <div className="space-y-12 animate-in fade-in duration-700">
+      {renderOrdersTable()}
+    </div>
+  );
+
+  const renderMasterRecipes = () => <AdminMasterRecipes />;
+
+  const renderOrderReport = () => {
+    if (orderReportLoading) {
+      return (
+        <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl p-8">
+          <p className="text-sm text-gray-400 font-medium">Loading report...</p>
+        </div>
+      );
+    }
+
+    const downloadOrderReportPdf = (
+      dayKey: string,
+      entries: Array<{ order: any; items: any[]; totalQty: number }>
+    ) => {
+      const doc = new jsPDF();
+
+      entries.forEach(({ order, items }, idx) => {
+        let y = 14;
+        doc.setFontSize(16);
+        doc.text("Order Report", 14, y);
+        y += 8;
+
+        doc.setFontSize(12);
+        doc.text(`Delivery Day: ${dayKey}`, 14, y);
+        y += 6;
+
+        const addressParts = [
+          order.deliveryDetails?.address,
+          order.deliveryDetails?.city,
+          order.deliveryDetails?.zipCode,
+        ].filter(Boolean);
+        const address = addressParts.length ? addressParts.join(", ") : "-";
+
+        autoTable(doc, {
+          startY: y,
+          head: [["Order Details", "Value"]],
+          body: [
+            ["Order ID", String(order._id || order.id || "-")],
+            ["Name", String(order.deliveryDetails?.fullName || order.customerName || "-")],
+            ["Delivery Email", String(order.deliveryDetails?.email || "-")],
+            ["Phone", String(order.deliveryDetails?.phone || "-")],
+            ["Address", address],
+          ],
+          styles: { fontSize: 10, cellPadding: 2 },
+          headStyles: { fillColor: [15, 15, 15], textColor: [255, 255, 255] },
+        });
+
+        const detailsY = (doc as any).lastAutoTable.finalY || y + 20;
+        autoTable(doc, {
+          startY: detailsY + 6,
+          head: [["Meal", "Quantity", "Variation"]],
+          body:
+            items.length > 0
+              ? items.map((item) => [
+                  item.meal?.name || "Meal",
+                  String(Number(item.__dayQuantity || item.quantity || 0)),
+                  String(item.baseOption || "Default"),
+                ])
+              : [["No items", "-", "-"]],
+          styles: { fontSize: 10, cellPadding: 2 },
+          headStyles: { fillColor: [15, 15, 15], textColor: [255, 255, 255] },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+        });
+
+        const finalY = (doc as any).lastAutoTable.finalY || detailsY + 20;
+        doc.setFontSize(11);
+        doc.text(`Delivery Day: ${dayKey}`, 14, finalY + 8);
+
+        if (idx < entries.length - 1) {
+          doc.addPage();
+        }
+      });
+
+      doc.save(`order-report-${dayKey.toLowerCase()}.pdf`);
+    };
+
+    const slides = Array.from(dayGroups.entries()).map(([dayKey, entries]) => {
+      const totalPages = Math.max(1, Math.ceil(entries.length / ORDER_REPORT_PAGE_SIZE));
+      const currentPage = Math.min(
+        Math.max(1, orderReportPageByDay[dayKey] ?? 1),
+        totalPages
+      );
+      const start = (currentPage - 1) * ORDER_REPORT_PAGE_SIZE;
+      const paginatedEntries = entries.slice(start, start + ORDER_REPORT_PAGE_SIZE);
+      return {
+      id: dayKey,
+      title: `${dayKey} Orders`,
+      content: (
+        <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
+          <div className="p-8 border-b border-white/5 flex items-center justify-between">
+            <h3 className="font-black text-xl text-white tracking-tight">
+              {dayKey} Orders
+            </h3>
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-gray-500 font-black uppercase tracking-widest">
+                {entries.length} Orders
+              </span>
+              <button
+                type="button"
+                onClick={() => downloadOrderReportPdf(dayKey, entries)}
+                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-200 flex items-center gap-2"
+              >
+                <FileDown className="w-4 h-4" />
+                Download PDF
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-white/5 text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+                  <th className="px-8 py-5">Customer</th>
+                  <th className="px-8 py-5">Login Email</th>
+                  <th className="px-8 py-5">Date</th>
+                  <th className="px-8 py-5 text-right">Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {paginatedEntries.map(({ order, items, totalQty }) => {
+                  const orderKey = `${dayKey}-${order._id || order.id}`;
+                  const isExpanded = expandedReportOrderId === orderKey;
+                  return (
+                    <React.Fragment key={orderKey}>
+                      <tr
+                        className="hover:bg-white/[0.02] transition-colors cursor-pointer"
+                        onClick={() =>
+                          setExpandedReportOrderId(isExpanded ? null : orderKey)
+                        }
+                      >
+                        <td className="px-8 py-6 text-white font-bold">
+                          {order.customerName || "-"}
+                        </td>
+                        <td className="px-8 py-6 text-sm text-gray-300">
+                          {order.email || "-"}
+                        </td>
+                        <td className="px-8 py-6 text-sm text-gray-300">
+                          {order.createdAt
+                            ? new Date(order.createdAt).toLocaleDateString()
+                            : "-"}
+                        </td>
+                        <td className="px-8 py-6 text-right text-gray-600">
+                          <ChevronRight
+                            className={`w-5 h-5 ml-auto transition-transform ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                          />
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-white/[0.02]">
+                          <td colSpan={4} className="px-8 pb-8">
                             <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
                               <h4 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-4">
                                 Delivery Details
                               </h4>
-                              <div className="space-y-2 text-sm text-gray-300">
-                                <div>
-                                  <span className="text-gray-500">Name:</span>{" "}
-                                  {o.deliveryDetails?.fullName || "-"}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Email:</span>{" "}
-                                  {o.deliveryDetails?.email || "-"}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Phone:</span>{" "}
-                                  {o.deliveryDetails?.phone || "-"}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Address:</span>{" "}
-                                  {o.deliveryDetails?.address || "-"}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">City:</span>{" "}
-                                  {o.deliveryDetails?.city || "-"}
-                                </div>
-                                <div>
-                                  <span className="text-gray-500">Pin:</span>{" "}
-                                  {o.deliveryDetails?.zipCode || "-"}
-                                </div>
-                                {o.deliveryDetails?.instructions && (
-                                  <div>
-                                    <span className="text-gray-500">
-                                      Notes:
-                                    </span>{" "}
-                                    {o.deliveryDetails.instructions}
-                                  </div>
-                                )}
-                              </div>
+                              <table className="w-full text-left text-sm">
+                                <tbody className="text-gray-300">
+                                  <tr>
+                                    <td className="py-2 text-gray-500 w-40">Name</td>
+                                    <td className="py-2">{order.deliveryDetails?.fullName || "-"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-2 text-gray-500">Delivery Email</td>
+                                    <td className="py-2">{order.deliveryDetails?.email || "-"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-2 text-gray-500">Phone</td>
+                                    <td className="py-2">{order.deliveryDetails?.phone || "-"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-2 text-gray-500">Address</td>
+                                    <td className="py-2">{order.deliveryDetails?.address || "-"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-2 text-gray-500">City</td>
+                                    <td className="py-2">{order.deliveryDetails?.city || "-"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-2 text-gray-500">Pin</td>
+                                    <td className="py-2">{order.deliveryDetails?.zipCode || "-"}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
                             </div>
-                            <div className="bg-black/20 rounded-2xl p-6 border border-white/5">
-                              <h4 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-4">
-                                Items
-                              </h4>
-                              <div className="space-y-3">
-                                {o.items?.map((item, idx) => (
-                                  <div
-                                    key={`${orderKey}-item-${idx}`}
-                                    className="flex items-center justify-between text-sm text-gray-300"
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="text-white font-bold">
+
+                            <div className="bg-black/20 rounded-2xl p-6 border border-white/5 mt-8">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-gray-500">
+                                  Items
+                                </h4>
+                                <span className="text-xs text-gray-500 font-black uppercase tracking-widest">
+                                  Total Qty: {totalQty}
+                                </span>
+                              </div>
+                              <table className="w-full text-left text-sm">
+                                <thead>
+                                  <tr className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">
+                                    <th className="py-3">Item</th>
+                                    <th className="py-3">Base</th>
+                                    <th className="py-3 text-right">Qty</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 text-gray-300">
+                                  {items.map((item, idx) => (
+                                    <tr key={`${orderKey}-item-${idx}`}>
+                                      <td className="py-3 text-white font-bold">
                                         {item.meal?.name || "Meal"}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        Base: {item.baseOption || "Default"}
-                                      </span>
-                                      {item.deliverySplit && (
-                                        <span className="text-xs text-gray-500">
-                                          Split: Sun {item.deliverySplit.sunday}, Wed {item.deliverySplit.wednesday}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-gray-400 font-black">
-                                      x{item.quantity}
-                                    </span>
-                                  </div>
-                                ))}
-                                {!o.items?.length && (
-                                  <span className="text-xs text-gray-500">
-                                    No items found
-                                  </span>
-                                )}
-                              </div>
+                                      </td>
+                                      <td className="py-3">
+                                        {item.baseOption || "Default"}
+                                      </td>
+                                      <td className="py-3 text-right text-gray-200 font-black">
+                                        x{Number(item.__dayQuantity || item.quantity || 0)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                  {items.length === 0 && (
+                                    <tr>
+                                      <td colSpan={3} className="py-4 text-gray-500">
+                                        No items found
+                                      </td>
+                                    </tr>
+                                  )}
+                                </tbody>
+                              </table>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+                {paginatedEntries.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-8 py-8 text-gray-500">
+                      No orders found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="p-6 border-t border-white/5 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() =>
+                  setOrderReportPageByDay((prev) => ({
+                    ...prev,
+                    [dayKey]: Math.max(1, (prev[dayKey] ?? 1) - 1),
+                  }))
+                }
+                disabled={currentPage <= 1}
+                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10"
+              >
+                Prev
+              </button>
+              <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setOrderReportPageByDay((prev) => ({
+                    ...prev,
+                    [dayKey]: Math.min(totalPages, (prev[dayKey] ?? 1) + 1),
+                  }))
+                }
+                disabled={currentPage >= totalPages}
+                className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-white/10"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
+      ),
+    };
+    });
+
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-wrap items-center gap-4">
+          <select
+            value={orderReportDay}
+            onChange={(e) => setOrderReportDay(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+          >
+            <option value="all">All Days</option>
+            {slides.map((slide) => (
+              <option key={slide.id} value={slide.id}>
+                {slide.title}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              Date From
+            </span>
+            <input
+              type="date"
+              value={orderReportFrom}
+              onChange={(e) => setOrderReportFrom(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              Date To
+            </span>
+            <input
+              type="date"
+              value={orderReportTo}
+              onChange={(e) => setOrderReportTo(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+            />
+          </div>
+        </div>
+        {slides.length > 0 ? (
+          <KitchenReportCarousel
+            slides={
+              orderReportDay === "all"
+                ? slides
+                : slides.filter((slide) => slide.id === orderReportDay)
+            }
+          />
+        ) : (
+          <div className="bg-[#1C1C1C] rounded-[2.5rem] border border-white/5 shadow-2xl p-8">
+            <p className="text-sm text-gray-400 font-medium">No orders found.</p>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderMeals = () => (
     <div className="animate-in fade-in duration-700 space-y-10">
@@ -645,7 +1206,7 @@ export const AdminDashboard: React.FC = () => {
               }
               className="bg-white/5 border border-white/5 rounded-2xl px-4 py-3 text-xs font-black uppercase tracking-widest text-white focus:outline-none"
             >
-              {[1, 2, 3, 4, 5, 6].map((week) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((week) => (
                 <option key={week} value={week}>
                   Week {week}
                 </option>
@@ -845,7 +1406,7 @@ export const AdminDashboard: React.FC = () => {
                     }
                     className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 focus:outline-none"
                   >
-                    {[1, 2, 3, 4, 5, 6].map((week) => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((week) => (
                       <option key={week} value={week}>
                         Week {week}
                       </option>
@@ -1843,7 +2404,12 @@ export const AdminDashboard: React.FC = () => {
       type: couponForm.type,
       value: numericValue,
       active: couponForm.active,
-    });
+      validFrom: couponForm.validFrom || null,
+      validTo: couponForm.validTo || null,
+      maxUsesPerUser: couponForm.maxUsesPerUser
+        ? Number(couponForm.maxUsesPerUser)
+        : null,
+    } as any);
     if (!result.ok) {
       setCouponError(result.error || "Failed to create coupon.");
       return;
@@ -1853,6 +2419,9 @@ export const AdminDashboard: React.FC = () => {
       type: "percent",
       value: "",
       active: true,
+      validFrom: "",
+      validTo: "",
+      maxUsesPerUser: "",
     });
   };
 
@@ -1897,6 +2466,52 @@ export const AdminDashboard: React.FC = () => {
               value={couponForm.value}
               onChange={(e) => setCouponForm({ ...couponForm, value: e.target.value })}
               placeholder={couponForm.type === "percent" ? "10" : "15"}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-black text-white focus:outline-none"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+          <div>
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
+              Valid From (optional)
+            </label>
+            <input
+              type="date"
+              value={couponForm.validFrom}
+              onChange={(e) =>
+                setCouponForm({ ...couponForm, validFrom: e.target.value })
+              }
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-black text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
+              Valid To (optional)
+            </label>
+            <input
+              type="date"
+              value={couponForm.validTo}
+              onChange={(e) =>
+                setCouponForm({ ...couponForm, validTo: e.target.value })
+              }
+              className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-black text-white focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">
+              Max Uses Per User (optional)
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={couponForm.maxUsesPerUser}
+              onChange={(e) =>
+                setCouponForm({
+                  ...couponForm,
+                  maxUsesPerUser: e.target.value,
+                })
+              }
+              placeholder="1 for one-time per user"
               className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-black text-white focus:outline-none"
             />
           </div>
@@ -1989,6 +2604,167 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const renderKitchenReport = () => {
+    if (kitchenReportLoading) {
+      return (
+        <div className="animate-in fade-in duration-700 space-y-10">
+          <div className="bg-[#1C1C1C] p-10 rounded-[2rem] border border-white/5">
+            <p className="text-sm text-gray-400 font-medium">Loading report...</p>
+          </div>
+        </div>
+      );
+    }
+
+    const report = adminData.kitchenReport;
+    const hasReport =
+      (report?.byDay?.sunday?.length || 0) > 0 ||
+      (report?.byDay?.wednesday?.length || 0) > 0;
+
+    const handleDownloadPdf = () => {
+      if (!report) return;
+      const doc = new jsPDF();
+      let y = 14;
+      doc.setFontSize(16);
+      doc.text("Kitchen Report", 14, y);
+      y += 6;
+
+      const daySections = [
+        {
+          title: "Sunday Delivery",
+          items: report.byDay.sunday,
+          total: report.totals.sunday,
+        },
+        {
+          title: "Wednesday Delivery",
+          items: report.byDay.wednesday,
+          total: report.totals.wednesday,
+        },
+      ];
+
+      daySections.forEach((section) => {
+        doc.setFontSize(12);
+        doc.text(section.title, 14, y + 6);
+
+        const body = section.items.map((item) => [
+          item.mealName,
+          item.baseOptions.join(", "),
+          item.baseOptionQuantities
+            .map((entry) => `${entry.baseOption}: ${entry.quantity}`)
+            .join("\n"),
+          String(item.totalQuantity),
+        ]);
+
+        if (body.length === 0) {
+          body.push(["No items", "-", "-", "0"]);
+        }
+
+        autoTable(doc, {
+          startY: y + 10,
+          head: [["Meal", "Variation", "Variation Option Qty", "Total Qty"]],
+          body,
+          styles: {
+            fontSize: 9,
+            cellPadding: 2,
+          },
+          headStyles: {
+            fillColor: [15, 15, 15],
+            textColor: [255, 255, 255],
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245],
+          },
+        });
+
+        const finalY = (doc as any).lastAutoTable.finalY || y + 20;
+        doc.setFontSize(11);
+        doc.text(`Total ${section.title}: ${section.total}`, 14, finalY + 8);
+        y = finalY + 14;
+
+        if (y > 260) {
+          doc.addPage();
+          y = 14;
+        }
+      });
+
+      doc.save("kitchen-report.pdf");
+    };
+
+    const slides = [
+      {
+        id: "sunday",
+        title: "Sunday Delivery",
+        content: (
+          <KitchenReportTable
+            title="Sunday Delivery"
+            items={report?.byDay?.sunday || []}
+            total={report?.totals?.sunday || 0}
+          />
+        ),
+      },
+      {
+        id: "wednesday",
+        title: "Wednesday Delivery",
+        content: (
+          <KitchenReportTable
+            title="Wednesday Delivery"
+            items={report?.byDay?.wednesday || []}
+            total={report?.totals?.wednesday || 0}
+          />
+        ),
+      },
+    ];
+
+    return (
+      <div className="animate-in fade-in duration-700 space-y-10">
+        <div className="flex flex-wrap items-center gap-4">
+          <select
+            value={kitchenReportDay}
+            onChange={(e) => setKitchenReportDay(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+          >
+            <option value="all">All Days</option>
+            <option value="sunday">Sunday</option>
+            <option value="wednesday">Wednesday</option>
+          </select>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              Date From
+            </span>
+            <input
+              type="date"
+              value={kitchenReportFrom}
+              onChange={(e) => setKitchenReportFrom(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+              Date To
+            </span>
+            <input
+              type="date"
+              value={kitchenReportTo}
+              onChange={(e) => setKitchenReportTo(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white focus:outline-none"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={!hasReport}
+            className="px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-white/5 text-gray-200 disabled:opacity-40 flex items-center gap-3"
+          >
+            <FileDown className="w-4 h-4" />
+            Download PDF
+          </button>
+        </div>
+        <KitchenReportCarousel slides={slides} />
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0C0C0C] flex text-white font-sans">
       <aside className="w-80 bg-[#0C0C0C] border-r border-white/5 flex flex-col sticky top-0 h-screen py-10 shrink-0">
@@ -2003,11 +2779,14 @@ export const AdminDashboard: React.FC = () => {
         <nav className="flex-1 px-6 space-y-2">
           {[
             { id: "dashboard", icon: LayoutDashboard, label: "Overview" },
-            { id: "meals", icon: Utensils, label: "Repository" },
+            { id: "meals", icon: Utensils, label: "Catalog" },
             { id: "recipes", icon: Utensils, label: "Recipes" },
             { id: "users", icon: Users, label: "Users" },
             { id: "coupons", icon: DollarSign, label: "Coupons" },
-            { id: "orders", icon: ShoppingBag, label: "Transaction Logs" },
+            { id: "orders", icon: ShoppingBag, label: "Orders Section" },
+            { id: "order-report", icon: TrendingUp, label: "Order Report" },
+            { id: "kitchen-report", icon: CheckCircle2, label: "Kitchen Report" },
+            { id: "master-recipe", icon: Utensils, label: "Master Recipe" },
           ].map((item: any) => (
             <button
               key={item.id}
@@ -2054,6 +2833,12 @@ export const AdminDashboard: React.FC = () => {
                 ? "User Directory"
                 : activeTab === "coupons"
                 ? "Coupon Vault"
+                : activeTab === "order-report"
+                ? "Order Report"
+                : activeTab === "kitchen-report"
+                ? "Kitchen Report"
+                : activeTab === "master-recipe"
+                ? "Master Recipe"
                 : "Audit Trail"}
             </h1>
           </div>
@@ -2077,6 +2862,14 @@ export const AdminDashboard: React.FC = () => {
           ? renderUsers()
           : activeTab === "coupons"
           ? renderCoupons()
+          : activeTab === "orders"
+          ? renderOrders()
+          : activeTab === "order-report"
+          ? renderOrderReport()
+          : activeTab === "kitchen-report"
+          ? renderKitchenReport()
+          : activeTab === "master-recipe"
+          ? renderMasterRecipes()
           : renderDashboard()}
       </main>
     </div>

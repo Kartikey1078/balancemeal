@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Plan, Meal, CartItem, DeliveryDetails, Order, OrderStatus, Recipe, AdminUser, Coupon, NutritionTag } from '../types.ts';
+import { User, Plan, Meal, CartItem, DeliveryDetails, Order, OrderStatus, Recipe, AdminUser, Coupon, NutritionTag, KitchenReport, MasterRecipe } from '../types.ts';
 import { PLANS } from '../constants';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -22,7 +22,7 @@ interface AppContextType {
   meals: Meal[];
   recipes: Recipe[];
   nutritionTags: NutritionTag[];
-  login: (email: string, pass: string) => Promise<boolean>;
+  login: (email: string, pass: string) => Promise<{ ok: boolean; hasOrders: boolean }>;
   signup: (name: string, email: string, pass: string) => Promise<boolean>;
   adminLogin: (email: string, pass: string) => Promise<boolean>;
   logout: () => void;
@@ -58,6 +58,9 @@ interface AppContextType {
     users: AdminUser[];
     coupons: Coupon[];
     allOrders: Order[];
+    kitchenReport: KitchenReport | null;
+    orderReport: Order[];
+    masterRecipes: MasterRecipe[];
     addMeal: (mealData: Partial<Meal>, imageFile?: File) => Promise<void>;
     updateMeal: (mealId: string, mealData: Partial<Meal>, imageFile?: File) => Promise<void>;
     deleteMeal: (mealId: string) => Promise<void>;
@@ -86,8 +89,8 @@ interface AppContextType {
     deleteNutritionTag: (id: string) => Promise<void>;
     updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
     refreshData: () => Promise<void>;
-    addCoupon: (couponData: { code: string; type: 'percent' | 'amount'; value: number; active?: boolean }) => Promise<{ ok: boolean; error?: string }>;
-    updateCoupon: (couponId: string, updates: Partial<Pick<Coupon, 'active' | 'type' | 'value'>>) => Promise<void>;
+    addCoupon: (couponData: { code: string; type: 'percent' | 'amount'; value: number; active?: boolean; validFrom?: string | null; validTo?: string | null; maxUsesPerUser?: number | null }) => Promise<{ ok: boolean; error?: string }>;
+    updateCoupon: (couponId: string, updates: Partial<Pick<Coupon, 'active' | 'type' | 'value' | 'validFrom' | 'validTo' | 'maxUsesPerUser'>>) => Promise<void>;
     fetchCoupons: () => Promise<void>;
     fetchUsers: (page?: number, limit?: number, search?: string, role?: string, hasOrders?: string) => Promise<{
       users: AdminUser[];
@@ -96,6 +99,12 @@ interface AppContextType {
       total: number;
       totalPages: number;
     }>;
+    fetchKitchenReport: (filters?: { day?: string; from?: string; to?: string }) => Promise<KitchenReport | null>;
+    fetchOrderReport: (filters?: { from?: string; to?: string }) => Promise<Order[]>;
+    fetchMasterRecipes: () => Promise<MasterRecipe[]>;
+    createMasterRecipe: (payload: Partial<MasterRecipe>) => Promise<{ ok: boolean; error?: string; recipe?: MasterRecipe }>;
+    updateMasterRecipe: (id: string, updates: Partial<MasterRecipe>) => Promise<{ ok: boolean; error?: string; recipe?: MasterRecipe }>;
+    deleteMasterRecipe: (id: string) => Promise<{ ok: boolean; error?: string }>;
   };
 }
 
@@ -133,6 +142,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [adminRecipes, setAdminRecipes] = useState<Recipe[]>([]);
   const [nutritionTags, setNutritionTags] = useState<NutritionTag[]>([]);
   const [adminNutritionTags, setAdminNutritionTags] = useState<NutritionTag[]>([]);
+  const [kitchenReport, setKitchenReport] = useState<KitchenReport | null>(null);
+  const [orderReport, setOrderReport] = useState<Order[]>([]);
+  const [masterRecipes, setMasterRecipes] = useState<MasterRecipe[]>([]);
   const [recipesLoading, setRecipesLoading] = useState(true);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
@@ -275,7 +287,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const data = await res.json();
       if (!res.ok) {
         setLoading(false);
-        return false;
+        return { ok: false, hasOrders: false };
       }
       const nextUser = {
         id: data.user.id,
@@ -290,10 +302,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAdminUser(null);
       localStorage.removeItem('adminUser');
       setLoading(false);
-      return true;
+      return { ok: true, hasOrders: Boolean(data.hasOrders) };
     } catch {
       setLoading(false);
-      return false;
+      return { ok: false, hasOrders: false };
     }
   };
 
@@ -834,7 +846,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCoupons(data.coupons || []);
   };
 
-  const adminAddCoupon = async (couponData: { code: string; type: 'percent' | 'amount'; value: number; active?: boolean }) => {
+  const adminAddCoupon = async (couponData: { code: string; type: 'percent' | 'amount'; value: number; active?: boolean; validFrom?: string | null; validTo?: string | null; maxUsesPerUser?: number | null }) => {
     if (!adminUser?.token) {
       return { ok: false, error: 'Not authorized' };
     }
@@ -856,7 +868,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const adminUpdateCoupon = async (
     couponId: string,
-    updates: Partial<Pick<Coupon, 'active' | 'type' | 'value'>>
+    updates: Partial<Pick<Coupon, 'active' | 'type' | 'value' | 'validFrom' | 'validTo' | 'maxUsesPerUser'>>
   ) => {
     if (!adminUser?.token) return;
     const res = await fetch(`${API_BASE_URL}/admin/coupons/${couponId}`, {
@@ -914,6 +926,96 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders(prev => prev.map(o => (o._id === orderId ? updated : o)));
   };
 
+  const adminFetchKitchenReport = async (filters?: { day?: string; from?: string; to?: string }) => {
+    if (!adminUser?.token) return null;
+    const params = new URLSearchParams();
+    if (filters?.day) params.set('day', filters.day);
+    if (filters?.from) params.set('from', filters.from);
+    if (filters?.to) params.set('to', filters.to);
+    const url = `${API_BASE_URL}/admin/kitchen-report${params.toString() ? `?${params.toString()}` : ''}`;
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setKitchenReport(data);
+      return data;
+    }
+    return null;
+  };
+
+  const adminFetchOrderReport = async (filters?: { from?: string; to?: string }) => {
+    if (!adminUser?.token) return [];
+    const params = new URLSearchParams();
+    if (filters?.from) params.set('from', filters.from);
+    if (filters?.to) params.set('to', filters.to);
+    const url = `${API_BASE_URL}/admin/order-report${params.toString() ? `?${params.toString()}` : ''}`;
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+    });
+    const data = await res.json();
+    const orders = data?.orders || [];
+    setOrderReport(orders);
+    return orders;
+  };
+
+  const adminFetchMasterRecipes = async () => {
+    if (!adminUser?.token) return [];
+    const res = await fetch(`${API_BASE_URL}/admin/master-recipes`, {
+      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+    });
+    const data = await res.json();
+    const recipes = data?.recipes || [];
+    setMasterRecipes(recipes);
+    return recipes;
+  };
+
+  const adminCreateMasterRecipe = async (payload: Partial<MasterRecipe>) => {
+    if (!adminUser?.token) return { ok: false, error: 'Not authorized' };
+    const res = await fetch(`${API_BASE_URL}/admin/master-recipes`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminUser?.token}`
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data?.error || 'Failed to create recipe' };
+    setMasterRecipes(prev => [data, ...prev]);
+    return { ok: true, recipe: data };
+  };
+
+  const adminUpdateMasterRecipe = async (id: string, updates: Partial<MasterRecipe>) => {
+    if (!adminUser?.token) return { ok: false, error: 'Not authorized' };
+    const res = await fetch(`${API_BASE_URL}/admin/master-recipes/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminUser?.token}`
+      },
+      body: JSON.stringify(updates)
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data?.error || 'Failed to update recipe' };
+    setMasterRecipes(prev => prev.map(r => (r._id === id ? data : r)));
+    return { ok: true, recipe: data };
+  };
+
+  const adminDeleteMasterRecipe = async (id: string) => {
+    if (!adminUser?.token) return { ok: false, error: 'Not authorized' };
+    const res = await fetch(`${API_BASE_URL}/admin/master-recipes/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${adminUser?.token}` }
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      return { ok: false, error: data?.error || 'Failed to delete recipe' };
+    }
+    setMasterRecipes(prev => prev.filter(r => r._id !== id));
+    return { ok: true };
+  };
+
   const fetchMyOrders = async () => {
     if (!user?.token || !user?.email) return;
     const res = await fetch(`${API_BASE_URL}/orders/mine`, {
@@ -945,6 +1047,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users: adminUsers,
         coupons,
         allOrders: orders,
+        kitchenReport,
+        orderReport,
+        masterRecipes,
         addMeal: adminAddMeal,
         updateMeal: adminUpdateMeal,
         deleteMeal: adminDeleteMeal,
@@ -969,6 +1074,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCoupon: adminUpdateCoupon,
         fetchCoupons: adminFetchCoupons,
         fetchUsers: adminFetchUsers,
+        fetchKitchenReport: adminFetchKitchenReport,
+        fetchOrderReport: adminFetchOrderReport,
+        fetchMasterRecipes: adminFetchMasterRecipes,
+        createMasterRecipe: adminCreateMasterRecipe,
+        updateMasterRecipe: adminUpdateMasterRecipe,
+        deleteMasterRecipe: adminDeleteMasterRecipe,
       },
       myOrders,
       fetchMyOrders,

@@ -76,6 +76,9 @@ export interface Coupon {
   type: 'percent' | 'amount';
   value: number;
   active: boolean;
+   validFrom?: string | null;
+   validTo?: string | null;
+   maxUsesPerUser?: number | null;
   createdAt?: string;
 }
 
@@ -117,10 +120,14 @@ export interface Order {
   email: string;
   items: CartItem[];
   totalPrice: number;
+  subtotal?: number;
+  discountAmount?: number;
+  couponCode?: string;
   status: OrderStatus;
   date: string;
   createdAt?: string;
   deliveryDetails: DeliveryDetails;
+  paymentId?: string;
 }
 
 export interface User {
@@ -145,6 +152,39 @@ export interface AdminUser {
   lastOrderItems?: CartItem[];
   lastOrderAt?: string | null;
   hasOrders?: boolean;
+}
+
+export interface KitchenReportItem {
+  mealName: string;
+  baseOptions: string[];
+  baseOptionQuantities: { baseOption: string; quantity: number }[];
+  totalQuantity: number;
+}
+
+export interface KitchenReport {
+  byDay: {
+    sunday: KitchenReportItem[];
+    wednesday: KitchenReportItem[];
+  };
+  totals: {
+    sunday: number;
+    wednesday: number;
+  };
+}
+
+export interface MasterRecipeIngredient {
+  name: string;
+  baseQuantity: number;
+  unit: string;
+}
+
+export interface MasterRecipe {
+  _id?: string;
+  name: string;
+  baseServings: number;
+  desiredServings: number;
+  ingredients: MasterRecipeIngredient[];
+  createdAt?: string;
 }
 
 export interface AppState {

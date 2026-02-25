@@ -18,6 +18,7 @@ export const Login: React.FC = () => {
   const [recoveryEmail, setRecoveryEmail] = useState('');
   const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState('');
+  const [recoveryResetLink, setRecoveryResetLink] = useState('');
   const [recoveryError, setRecoveryError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,13 +26,20 @@ export const Login: React.FC = () => {
     setLoading(true);
     setError('');
 
-    const success = isLoginMode
-      ? await login(email, pass)
-      : await signup(name, email, pass);
-    if (success) {
-      navigate('/');
+    if (isLoginMode) {
+      const result = await login(email, pass);
+      if (result.ok) {
+        navigate(result.hasOrders ? '/dashboard' : '/');
+      } else {
+        setError('Invalid email or password');
+      }
     } else {
-      setError(isLoginMode ? 'Invalid email or password' : 'Email already exists');
+      const success = await signup(name, email, pass);
+      if (success) {
+        navigate('/');
+      } else {
+        setError('Email already exists');
+      }
     }
     setLoading(false);
   };
@@ -110,6 +118,7 @@ export const Login: React.FC = () => {
                     onClick={() => {
                       setShowRecovery((prev) => !prev);
                       setRecoveryMessage('');
+                      setRecoveryResetLink('');
                       setRecoveryError('');
                     }}
                     className="text-xs font-black text-gold-500 hover:text-gold-600"
@@ -147,6 +156,7 @@ export const Login: React.FC = () => {
                   onChange={(e) => {
                     setRecoveryEmail(e.target.value);
                     if (recoveryMessage) setRecoveryMessage('');
+                    if (recoveryResetLink) setRecoveryResetLink('');
                     if (recoveryError) setRecoveryError('');
                   }}
                   placeholder="name@BalancedMeal.com"
@@ -156,7 +166,19 @@ export const Login: React.FC = () => {
                   <p className="text-xs font-bold text-rose-500">{recoveryError}</p>
                 )}
                 {recoveryMessage && (
-                  <p className="text-xs font-bold text-emerald-500">{recoveryMessage}</p>
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-emerald-500">{recoveryMessage}</p>
+                    {recoveryResetLink && (
+                      <a
+                        href={recoveryResetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-xs font-bold text-gold-600 hover:underline break-all"
+                      >
+                        Open reset link
+                      </a>
+                    )}
+                  </div>
                 )}
                 <button
                   type="button"
@@ -171,15 +193,21 @@ export const Login: React.FC = () => {
                       return;
                     }
                     try {
+                      const normalizedEmail = recoveryEmail.trim().toLowerCase();
                       const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: recoveryEmail }),
+                        body: JSON.stringify({ email: normalizedEmail }),
                       });
+                      const data = await res.json().catch(() => ({}));
                       if (!res.ok) {
                         setRecoveryError('Unable to send recovery email.');
+                      } else if (data.resetLink) {
+                        setRecoveryMessage('No email server configured. Use the link below to reset your password:');
+                        setRecoveryResetLink(data.resetLink);
                       } else {
-                        setRecoveryMessage('If this email exists, a reset link has been sent.');
+                        setRecoveryMessage('If this email exists, a reset link has been sent. Check your inbox.');
+                        setRecoveryResetLink('');
                       }
                     } catch {
                       setRecoveryError('Unable to send recovery email.');
